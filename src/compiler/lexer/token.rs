@@ -1,8 +1,5 @@
 use internment::Intern;
 
-pub(crate) use kwd;
-pub(crate) use punct;
-
 use crate::source::Span;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -91,3 +88,5 @@ macro_rules! kwd {
     ($k:ident) => (TokenKind::Keyword(Keyword::$k))
 }
 
+pub(crate) use kwd;
+pub(crate) use punct;
