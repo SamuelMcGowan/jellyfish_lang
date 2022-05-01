@@ -1,0 +1,10 @@
+[package]
+name = "jellyfish_lang"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ansi_term = "0.12"
+chumsky = "0.8.0"
+internment = "0.7.0"
+minimal-lexical = "0.2.1"
