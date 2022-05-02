@@ -1,4 +1,4 @@
-use jellyfish_lang::{CompiledModule, Diagnostics, Source, VM};
+use jellyfish_lang::{CompiledProgram, Diagnostics, Source, VM};
 
 fn main() {
     let cmd = std::env::args().next().unwrap();
@@ -21,7 +21,7 @@ fn main() {
 
     let mut diagnostics = Diagnostics::default();
 
-    let compile_result = CompiledModule::compile(source, &mut diagnostics);
+    let compile_result = CompiledProgram::compile(source, &mut diagnostics);
     diagnostics.print();
 
     let module = match compile_result {

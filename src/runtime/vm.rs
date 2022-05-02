@@ -1,4 +1,4 @@
-use crate::CompiledModule;
+use crate::CompiledProgram;
 
 use super::chunk::{Chunk, Instr};
 use super::value::Value;
@@ -33,7 +33,7 @@ impl VM {
         }
     }
 
-    pub fn run(&mut self, module: CompiledModule) -> Result<(), RuntimeError> {
+    pub fn run(&mut self, module: CompiledProgram) -> Result<(), RuntimeError> {
         let mut frame = CallFrame::new(module.chunk);
 
         macro_rules! read {

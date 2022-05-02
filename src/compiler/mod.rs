@@ -1,5 +1,6 @@
 use crate::compiler::codegen::BytecodeEmitter;
 use crate::runtime::chunk::Chunk;
+use crate::runtime::CompiledProgram;
 use crate::Source;
 
 use self::diagnostic::Diagnostics;
@@ -12,14 +13,9 @@ pub mod diagnostic;
 pub mod lexer;
 pub mod parser;
 
-pub struct CompiledModule {
-    pub source: Source,
-    pub chunk: Chunk,
-}
-
-impl CompiledModule {
+impl CompiledProgram {
     #[allow(clippy::result_unit_err)]
-    pub fn compile(source: Source, diagnostics: &mut Diagnostics) -> Result<CompiledModule, ()> {
+    pub fn compile(source: Source, diagnostics: &mut Diagnostics) -> Result<CompiledProgram, ()> {
         let lexer = Lexer::new(source.cursor());
         let parser = Parser::new(lexer, diagnostics);
 
