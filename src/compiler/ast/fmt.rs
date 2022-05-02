@@ -1,4 +1,4 @@
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Result};
 
 use crate::compiler::ast::Expr;
 use crate::runtime::value::{Object, Value};
@@ -6,7 +6,7 @@ use crate::runtime::value::{Object, Value};
 use super::*;
 
 impl Display for Expr {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
             Self::Var(id) => write!(f, "{}", id),
             Self::Value(id) => write!(f, "{}", id),

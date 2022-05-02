@@ -21,8 +21,8 @@ fn main() {
 
     let mut diagnostics = Diagnostics::default();
 
-    let compile_result = CompiledProgram::compile(source, &mut diagnostics);
-    diagnostics.print();
+    let compile_result = CompiledProgram::compile(&source, &mut diagnostics);
+    diagnostics.print(&source);
 
     let module = match compile_result {
         Ok(module) => module,

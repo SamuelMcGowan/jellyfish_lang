@@ -9,7 +9,7 @@ use crate::source::Source;
 
 use self::chunk::Chunk;
 
-pub struct CompiledProgram {
-    pub source: Source,
+pub struct CompiledProgram<'sess> {
+    pub source: &'sess Source,
     pub chunk: Chunk,
 }

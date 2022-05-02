@@ -44,8 +44,8 @@ impl Source {
         Cursor::new(self)
     }
 
-    pub fn span_str(&self, span: Range<usize>) -> &str {
-        &self.source[span]
+    pub fn span_str(&self, span: Span) -> &str {
+        &self.source[span.range()]
     }
 
     pub fn line_index(&self, byte_pos: usize) -> usize {
@@ -55,7 +55,7 @@ impl Source {
         }
     }
 
-    pub fn line_span(&self, byte_pos: usize) -> Option<Span> {
+    pub fn line_span(&self, byte_pos: usize) -> Span {
         let line_index = self.line_index(byte_pos);
 
         let start = self.line_offsets[line_index];
@@ -65,12 +65,12 @@ impl Source {
             .copied()
             .unwrap_or(self.source.len());
 
-        Some(Span { start, end })
+        Span { start, end }
     }
 
     pub fn line_col(&self, byte_pos: usize) -> LineCol {
         let line_index = self.line_index(byte_pos);
-        let col_index = line_index - self.line_offsets[line_index];
+        let col_index = byte_pos - self.line_offsets[line_index];
 
         LineCol {
             line: line_index + 1,
@@ -80,7 +80,7 @@ impl Source {
 
     fn calculate_line_offsets(s: &str) -> Vec<usize> {
         let mut offsets = vec![0];
-        offsets.extend(s.match_indices('\n').map(|(pos, _)| pos));
+        offsets.extend(s.match_indices('\n').map(|(pos, _)| pos + 1));
         offsets
     }
 }
@@ -135,6 +135,6 @@ impl<'sess> Cursor<'sess> {
     }
 
     pub fn lexeme(&self) -> &str {
-        self.source.span_str(self.span().range())
+        self.source.span_str(self.span())
     }
 }

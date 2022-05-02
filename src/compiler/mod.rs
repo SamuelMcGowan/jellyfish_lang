@@ -13,9 +13,12 @@ pub mod diagnostic;
 pub mod lexer;
 pub mod parser;
 
-impl CompiledProgram {
+impl<'sess> CompiledProgram<'sess> {
     #[allow(clippy::result_unit_err)]
-    pub fn compile(source: Source, diagnostics: &mut Diagnostics) -> Result<CompiledProgram, ()> {
+    pub fn compile(
+        source: &'sess Source,
+        diagnostics: &mut Diagnostics,
+    ) -> Result<CompiledProgram<'sess>, ()> {
         let lexer = Lexer::new(source.cursor());
         let parser = Parser::new(lexer, diagnostics);
 

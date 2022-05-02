@@ -4,6 +4,7 @@ use crate::runtime::value::Value;
 
 pub use self::types::*;
 
+mod fmt;
 mod types;
 
 pub struct Module {
