@@ -108,7 +108,7 @@ impl<'sess> Parser<'sess> {
         let lhs_token = self.cursor.next();
 
         let prefix_fn = PrefixFunction::from(lhs_token.kind)
-            .ok_or_else(|| ParseError::new(lhs_token, ParseErrorKind::ExpectedExpr))?;
+            .ok_or_else(|| Error::ExpectedExpression(lhs_token))?;
 
         // Parse the prefix, which is either a prefix operator or a value.
         let mut expr = prefix_fn.0(self, lhs_token.kind)?;
@@ -180,10 +180,7 @@ impl<'sess> Parser<'sess> {
             punct!(Dot) => match *rhs {
                 Expr::Var(id) => Expr::FieldAccess(lhs, id),
                 _ => {
-                    return Err(ParseError::new(
-                        rhs_token,
-                        ParseErrorKind::InvalidFieldAccess,
-                    ));
+                    return Err(Error::InvalidFieldAccess(rhs_token));
                 }
             },
 

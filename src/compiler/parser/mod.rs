@@ -1,19 +1,19 @@
 use crate::compiler::ast::*;
 use crate::compiler::diagnostic::*;
 use crate::compiler::lexer::cursor::Cursor;
-use crate::compiler::lexer::Lexer;
 use crate::compiler::lexer::token::*;
+use crate::compiler::lexer::Lexer;
 
 mod expr;
 mod stmt;
 
 pub struct Parser<'sess> {
     cursor: Cursor<'sess>,
-    diagnostics: &'sess mut Diagnostics,
+    diagnostics: &'sess mut ErrorReporter,
 }
 
 impl<'sess> Parser<'sess> {
-    pub fn new(lexer: Lexer<'sess>, diagnostics: &'sess mut Diagnostics) -> Self {
+    pub fn new(lexer: Lexer<'sess>, diagnostics: &'sess mut ErrorReporter) -> Self {
         Self {
             cursor: lexer.cursor(),
             diagnostics,
@@ -27,7 +27,7 @@ impl<'sess> Parser<'sess> {
             let statement = match self.parse_stmt() {
                 Ok(stmt) => stmt,
                 Err(err) => {
-                    self.diagnostics.report(Error::ParseError(err));
+                    self.diagnostics.report(err.report());
                     self.cursor.ignore_while(|kind| kind == punct!(Semicolon));
                     self.cursor.next();
                     continue;
@@ -57,7 +57,10 @@ impl<'sess> Parser<'sess> {
         if token.kind == kind {
             Ok(token)
         } else {
-            Err(ParseError::new(token, ParseErrorKind::ExpectedKind(kind)))
+            Err(Error::UnexpectedToken {
+                expected: kind,
+                found: token,
+            })
         }
     }
 }

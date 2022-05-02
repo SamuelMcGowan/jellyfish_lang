@@ -1,85 +1,173 @@
 use ansi_term::{Colour, Style};
 
+use crate::compiler::lexer::token::{Token, TokenKind};
 use std::path::PathBuf;
 
 use crate::source::{Source, Span};
 
-mod parser;
+pub type ParseResult<T> = Result<T, Error>;
 
-pub use self::parser::*;
-
-#[derive(Debug, Clone)]
 pub enum Error {
-    ParseError(ParseError),
-    FileNotFoundError(PathBuf),
+    FileNotFound(PathBuf),
+    UnexpectedToken { expected: TokenKind, found: Token },
+    ExpectedExpression(Token),
+    InvalidFieldAccess(Token),
 }
 
 impl Error {
-    pub fn report(&self) -> Report {
+    pub fn report(&self) -> ErrorReport {
         match self {
-            Self::ParseError(err) => err.report(),
-            Self::FileNotFoundError(path) => Report {
-                title: "file not found",
-                msg: format!("couldn't find file `{}`", path.display()),
-                snippet: None,
-            },
+            Self::FileNotFound(path) => ErrorReport::new("file not found")
+                .with_label(format!("couldn't find file `{}`", path.display())),
+
+            Self::UnexpectedToken { expected, found } => ErrorReport::new("unexpected token")
+                .with_labelled_source(
+                    format!("expected {:?} but found {:?}", expected, found.kind),
+                    found.span,
+                ),
+
+            Self::ExpectedExpression(found) => ErrorReport::new("unexpected token")
+                .with_labelled_source(
+                    format!("expected an expression but found {:?}", found.kind),
+                    found.span,
+                ),
+
+            Self::InvalidFieldAccess(found) => ErrorReport::new("invalid field access")
+                .with_labelled_source(format!("invalid field access {:?}", found.kind), found.span)
+                .with_hint("field access must be an identifier".to_string()),
         }
     }
 }
 
-pub struct Report {
-    pub title: &'static str,
+pub struct Label {
     pub msg: String,
-    pub snippet: Option<Span>,
+    pub span: Option<Span>,
+    // TODO: Add Source IDs. (SourceSpan type?)
+}
+
+pub struct ErrorReport {
+    pub title: &'static str,
+    pub labels: Vec<Label>,
+
+    pub notes: Vec<String>,
+    pub hints: Vec<String>,
+}
+
+impl ErrorReport {
+    pub fn new(title: &'static str) -> Self {
+        Self {
+            title,
+            labels: vec![],
+
+            notes: vec![],
+            hints: vec![],
+        }
+    }
+
+    pub fn with_label(mut self, msg: String) -> Self {
+        self.labels.push(Label { msg, span: None });
+        self
+    }
+
+    pub fn with_labelled_source(mut self, msg: String, span: Span) -> Self {
+        self.labels.push(Label {
+            msg,
+            span: Some(span),
+        });
+        self
+    }
+
+    pub fn with_note(mut self, note: String) -> Self {
+        self.notes.push(note);
+        self
+    }
+
+    pub fn with_hint(mut self, hint: String) -> Self {
+        self.hints.push(hint);
+        self
+    }
+
+    fn print(self, source: &Source) {
+        let err_style = Style::new().fg(Colour::Red).bold();
+
+        let label_style = Style::new().fg(Colour::Blue).bold();
+        let note_style = Style::new().fg(Colour::Cyan).bold();
+        let hint_style = Style::new().fg(Colour::Green).bold();
+
+        let line_num_style = Style::new().fg(Colour::White).dimmed();
+        let underline_style = Style::new().fg(Colour::Red);
+
+        eprintln!("{}: {}", err_style.paint("error"), self.title);
+
+        for label in self.labels {
+            if let Some(span) = label.span {
+                let loc = source.line_col(span.start);
+                let line_span = source.line_span(span.start);
+
+                let header = format!("in `{}`, line {}, col {}:", source.name, loc.line, loc.col);
+
+                let line_num = format!("{} | ", loc.line);
+                let line = source.span_str(line_span).trim_end();
+
+                let underline_start = loc.col - 1;
+                let underline_end = usize::min(span.end, line_span.end) - line_span.start;
+                let underline_len = usize::max(underline_end - underline_start, 1);
+
+                eprintln!("   {}", label_style.paint(header));
+                eprintln!("      {}{}", line_num_style.paint(&line_num), line);
+                eprintln!(
+                    "      {}{}",
+                    " ".repeat(line_num.len() + underline_start),
+                    underline_style.paint("^".repeat(underline_len))
+                );
+            }
+
+            eprintln!("   {}: {}", label_style.paint("msg"), label.msg);
+        }
+
+        for note in self.notes {
+            eprintln!("   {}: {}", note_style.paint("note"), note);
+        }
+
+        for hint in self.hints {
+            eprintln!("   {}: {}", hint_style.paint("hint"), hint);
+        }
+
+        eprintln!();
+    }
 }
 
 #[derive(Default)]
-pub struct Diagnostics {
-    errors: Vec<Error>,
+pub struct ErrorReporter {
+    reports: Vec<ErrorReport>,
 }
 
-impl Diagnostics {
-    pub fn report(&mut self, err: Error) {
-        self.errors.push(err);
+impl ErrorReporter {
+    pub fn report(&mut self, err: ErrorReport) {
+        self.reports.push(err);
     }
 
     pub fn had_errors(&self) -> bool {
-        !self.errors.is_empty()
+        !self.reports.is_empty()
     }
 
     #[allow(clippy::result_unit_err)]
     pub fn assert_ok(&self) -> Result<(), ()> {
-        match self.errors.is_empty() {
+        match self.reports.is_empty() {
             true => Ok(()),
             false => Err(()),
         }
     }
 
-    pub fn print(&self, source: &Source) {
+    pub fn print(self, source: &Source) {
         let err_style = Style::new().fg(Colour::Red).bold();
         let header_style = Style::new().fg(Colour::Blue);
 
         if self.had_errors() {
             eprintln!("ENCOUNTERED ERROR(S) WHILE COMPILING:\n");
 
-            for error in &self.errors {
-                let report = error.report();
-                eprintln!("{}: {}", err_style.paint("error"), report.title);
-
-                if let Some(span) = report.snippet {
-                    let loc = source.line_col(span.start);
-                    let line = source.span_str(source.line_span(span.start)).trim_end();
-
-                    let snippet_header =
-                        format!("   in {}, line {}, col {}:", source.name, loc.line, loc.col);
-                    eprintln!("{}", header_style.paint(snippet_header));
-                    eprintln!("      {} | {}", loc.line, line);
-                    eprintln!();
-                }
-
-                let msg = format!("   msg: {}", report.msg);
-                eprintln!("{}", header_style.paint(msg));
-                eprintln!();
+            for report in self.reports {
+                report.print(source);
             }
         }
     }

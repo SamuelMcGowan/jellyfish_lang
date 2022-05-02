@@ -16,6 +16,10 @@ impl Span {
             end: self.end,
         }
     }
+
+    pub fn len(self) -> usize {
+        self.end - self.start
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -59,11 +63,21 @@ impl Source {
         let line_index = self.line_index(byte_pos);
 
         let start = self.line_offsets[line_index];
-        let end = self
+        let mut end = self
             .line_offsets
             .get(line_index + 1)
             .copied()
             .unwrap_or(self.source.len());
+
+        // get rid of end of line characters
+        if cfg!(target_os = "windows") {
+            end -= 2;
+        } else {
+            end -= 1;
+        }
+
+        // make sure we don't to deal with any nasty wrapping
+        let end = usize::max(end, start + 1);
 
         Span { start, end }
     }

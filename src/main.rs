@@ -1,4 +1,4 @@
-use jellyfish_lang::{CompiledProgram, Diagnostics, Source, VM};
+use jellyfish_lang::{CompiledProgram, ErrorReporter, Source, VM};
 
 fn main() {
     let cmd = std::env::args().next().unwrap();
@@ -19,7 +19,7 @@ fn main() {
         }
     };
 
-    let mut diagnostics = Diagnostics::default();
+    let mut diagnostics = ErrorReporter::default();
 
     let compile_result = CompiledProgram::compile(&source, &mut diagnostics);
     diagnostics.print(&source);

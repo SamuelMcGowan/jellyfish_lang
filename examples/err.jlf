@@ -1,3 +1,5 @@
 print 1 + 2 * @;
 print a.true;
 print "hello
+
+there
