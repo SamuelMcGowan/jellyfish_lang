@@ -17,11 +17,7 @@ pub enum Error {
 impl Error {
     pub fn report(&self) -> Report {
         match self {
-            Self::ParseError(err) => Report {
-                title: err.kind.title(),
-                msg: format!("{}", err),
-                snippet: Some(err.token.span),
-            },
+            Self::ParseError(err) => err.report(),
             Self::FileNotFoundError(path) => Report {
                 title: "file not found",
                 msg: format!("couldn't find file `{}`", path.display()),

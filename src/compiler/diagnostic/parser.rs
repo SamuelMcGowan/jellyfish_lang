@@ -1,5 +1,8 @@
-use crate::compiler::lexer::token::*;
 use std::fmt::{Display, Formatter};
+
+use crate::compiler::lexer::token::*;
+
+use super::Report;
 
 #[derive(Debug, Clone)]
 pub struct ParseError {
@@ -10,6 +13,14 @@ pub struct ParseError {
 impl ParseError {
     pub fn new(token: Token, kind: ParseErrorKind) -> Self {
         Self { token, kind }
+    }
+
+    pub fn report(&self) -> Report {
+        Report {
+            title: self.kind.title(),
+            msg: format!("{}", self),
+            snippet: Some(self.token.span),
+        }
     }
 }
 
