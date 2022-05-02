@@ -1,10 +1,27 @@
-use crate::compiler::ast::{Expr, Module, Statement};
+use crate::compiler::ast::{Expr, IfStatement, Module, Statement};
 use crate::runtime::chunk::{Chunk, Instr, Opcode};
 use crate::runtime::value::Value;
 
+enum JumpKind {
+    Jump,
+    JumpNot,
+}
+
+impl JumpKind {
+    pub fn instr(&self) -> Instr {
+        match self {
+            Self::Jump => Instr::JumpU32,
+            Self::JumpNot => Instr::JumpNotU32,
+        }
+    }
+}
+
+// TODO: handle 64 bit addr case???
+struct Jump(u32);
+
 impl Chunk {
     pub fn emit_instr(&mut self, instr: Instr) {
-        self.code.push(Opcode { instr });
+        self.code.push(instr.into());
     }
 
     pub fn emit_constant(&mut self, value: Value) {
@@ -20,23 +37,43 @@ impl Chunk {
         }
     }
 
+    #[inline]
     fn emit_u8(&mut self, n: u8) {
-        self.code.push(Opcode { byte: n as u8 });
+        self.code.push((n as u8).into());
     }
 
+    #[inline]
     fn emit_u32(&mut self, n: u32) {
         self.emit_u8((n & 0xff000000) as u8);
         self.emit_u8((n & 0x00ff0000) as u8);
         self.emit_u8((n & 0x0000ff00) as u8);
         self.emit_u8((n & 0x000000ff) as u8);
     }
+
+    fn new_jump(&mut self, kind: JumpKind) -> Jump {
+        self.emit_instr(kind.instr());
+
+        let source = self.code.len() as u32;
+        self.emit_u32(0);
+
+        Jump(source)
+    }
+
+    fn jump_arrive(&mut self, source: Jump) {
+        let from = source.0 as usize;
+        let dest = self.code.len();
+        self.code[from].set_byte((dest & 0xff000000) as u8);
+        self.code[from + 1].set_byte((dest & 0x00ff0000) as u8);
+        self.code[from + 2].set_byte((dest & 0x0000ff00) as u8);
+        self.code[from + 3].set_byte((dest & 0x000000ff) as u8);
+    }
 }
 
-pub trait BytecodeEmitter<'a> {
+pub trait BytecodeEmitter {
     fn emit(&self, chunk: &mut Chunk);
 }
 
-impl<'a> BytecodeEmitter<'a> for Module {
+impl BytecodeEmitter for Module {
     fn emit(&self, chunk: &mut Chunk) {
         for stmt in &self.statements {
             stmt.emit(chunk);
@@ -47,9 +84,10 @@ impl<'a> BytecodeEmitter<'a> for Module {
     }
 }
 
-impl<'a> BytecodeEmitter<'a> for Statement {
+impl BytecodeEmitter for Statement {
     fn emit(&self, chunk: &mut Chunk) {
         match self {
+            Self::If(if_statement) => if_statement.emit(chunk),
             Self::DebugPrint(expr) => {
                 expr.emit(chunk);
                 chunk.emit_instr(Instr::DebugPrint);
@@ -58,11 +96,12 @@ impl<'a> BytecodeEmitter<'a> for Statement {
                 expr.emit(chunk);
                 chunk.emit_instr(Instr::Pop);
             }
+            Self::DummyStmt => unreachable!(),
         }
     }
 }
 
-impl<'a> BytecodeEmitter<'a> for Expr {
+impl BytecodeEmitter for Expr {
     fn emit(&self, chunk: &mut Chunk) {
         macro_rules! binary_op {
             ($a:ident $op:ident $b:ident) => {{
@@ -101,7 +140,39 @@ impl<'a> BytecodeEmitter<'a> for Expr {
             Self::Mod(a, b) => binary_op!(a Mod b),
             Self::Pow(a, b) => binary_op!(a Pow b),
 
-            _ => todo!("can't emit bytecode for expression"),
+            Self::Block(statements) => {
+                for statement in statements {
+                    statement.emit(chunk);
+                }
+                // TODO: remember to pop values here
+            }
+            Self::IfStatement(if_statement) => if_statement.emit(chunk),
+
+            Self::DummyExpr => unreachable!(),
+
+            other => todo!("can't emit bytecode for expression {}", other),
+        }
+    }
+}
+
+impl BytecodeEmitter for IfStatement {
+    fn emit(&self, chunk: &mut Chunk) {
+        self.condition.emit(chunk);
+
+        if let Some(else_) = &self.else_ {
+            let else_jump = chunk.new_jump(JumpKind::JumpNot);
+
+            self.then.emit(chunk);
+            let end_jump = chunk.new_jump(JumpKind::Jump);
+
+            chunk.jump_arrive(else_jump);
+            else_.emit(chunk);
+
+            chunk.jump_arrive(end_jump);
+        } else {
+            let end_jump = chunk.new_jump(JumpKind::JumpNot);
+            self.then.emit(chunk);
+            chunk.jump_arrive(end_jump);
         }
     }
 }

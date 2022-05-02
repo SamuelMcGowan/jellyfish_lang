@@ -24,7 +24,7 @@ fn main() {
     let compile_result = CompiledProgram::compile(&source, &mut diagnostics);
     diagnostics.print(&source);
 
-    let module = match compile_result {
+    let program = match compile_result {
         Ok(module) => module,
         Err(_) => {
             eprintln!("exiting with errors");
@@ -32,9 +32,22 @@ fn main() {
         }
     };
 
+    println!("CHUNK\n=====");
+    for opcode in &program.chunk.code {
+        println!(
+            "{}\t{}",
+            opcode.byte(),
+            opcode
+                .instr_safe()
+                .map(|s| format!("{:?}", s))
+                .unwrap_or_else(|| "--".to_string())
+        );
+    }
+    println!();
+
     let mut vm = VM::new();
-    if let Err(err) = vm.run(module) {
+    if let Err(err) = vm.run(program) {
         // TODO: print runtime errors nicely
-        eprintln!("RUNTIME ERROR: {:?}", err);
+        eprintln!("RUNTIME ERROR: {:#?}", err);
     }
 }

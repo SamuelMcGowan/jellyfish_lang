@@ -1,1 +1,6 @@
-print "hello world!";
+if 12 > 10 {
+    print "12 > 10";
+} else {
+    print "10 > 12";
+}
+print "was I correct?";

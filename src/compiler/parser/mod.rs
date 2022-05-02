@@ -22,21 +22,34 @@ impl<'sess> Parser<'sess> {
 
     pub fn parse(mut self) -> Module {
         let mut statements = vec![];
-
         while !self.cursor.eof() {
-            let statement = match self.parse_stmt() {
-                Ok(stmt) => stmt,
-                Err(err) => {
-                    self.diagnostics.report(err.report());
-                    self.cursor.ignore_while(|kind| kind == punct!(Semicolon));
-                    self.cursor.next();
-                    continue;
-                }
-            };
-            statements.push(statement);
+            statements.push(self.parse_statement());
         }
 
         Module { statements }
+    }
+
+    fn parse_or_recover<T, F: FnMut(&mut Self) -> ParseResult<T>, R: FnMut(&mut Self) -> T>(
+        &mut self,
+        mut f: F,
+        mut recover: R,
+    ) -> T {
+        match f(self) {
+            Ok(result) => result,
+            Err(err) => {
+                self.diagnostics.report(err.report());
+                recover(self)
+            }
+        }
+    }
+
+    fn recover_to(&mut self, kind: TokenKind) {
+        self.cursor.ignore_while(|kind_actual| kind_actual != kind);
+    }
+
+    fn recover_past(&mut self, kind: TokenKind) {
+        self.cursor.ignore_while(|kind_actual| kind_actual != kind);
+        self.cursor.next();
     }
 
     fn parse_comma_list<T>(

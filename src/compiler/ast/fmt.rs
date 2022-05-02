@@ -47,7 +47,44 @@ impl Display for Expr {
                         .join(", ")
                 )
             }
+
+            Self::Block(statements) => {
+                write!(
+                    f,
+                    "{{{}}}",
+                    statements
+                        .iter()
+                        .map(|s| format!("{}", s))
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
+            }
+
+            Self::IfStatement(if_statement) => write!(f, "{}", if_statement),
+
+            Self::DummyExpr => write!(f, "DummyExpr"),
         }
+    }
+}
+
+impl Display for Statement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match self {
+            Self::If(if_statement) => write!(f, "{}", if_statement),
+            Self::DebugPrint(expr) => write!(f, "print {}", expr),
+            Self::ExprStmt(expr) => write!(f, "Stmt({})", expr),
+            Self::DummyStmt => write!(f, "DummyStmt"),
+        }
+    }
+}
+
+impl Display for IfStatement {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "(if {} then {}", self.condition, self.then)?;
+        if let Some(else_) = &self.else_ {
+            write!(f, " else {}", else_)?;
+        }
+        write!(f, ")")
     }
 }
 

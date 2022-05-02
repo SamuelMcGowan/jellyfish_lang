@@ -43,7 +43,7 @@ impl<'sess> Cursor<'sess> {
     }
 
     pub fn ignore_while(&mut self, mut f: impl FnMut(TokenKind) -> bool) {
-        while !(self.eof() || f(self.peek().kind)) {
+        while !self.eof() && f(self.peek().kind) {
             self.next();
         }
     }

@@ -11,6 +11,7 @@ pub enum Error {
     FileNotFound(PathBuf),
     UnexpectedToken { expected: TokenKind, found: Token },
     ExpectedExpression(Token),
+    ExpectedIfArm(Token),
     InvalidFieldAccess(Token),
 }
 
@@ -29,6 +30,12 @@ impl Error {
             Self::ExpectedExpression(found) => ErrorReport::new("unexpected token")
                 .with_labelled_source(
                     format!("expected an expression but found {:?}", found.kind),
+                    found.span,
+                ),
+
+            Self::ExpectedIfArm(found) => ErrorReport::new("unexpected token")
+                .with_labelled_source(
+                    format!("expected an if statement arm but found {:?}", found.kind),
                     found.span,
                 ),
 
@@ -109,16 +116,17 @@ impl ErrorReport {
                 let line_num = format!("{} | ", loc.line);
                 let line = source.span_str(line_span).trim_end();
 
-                let underline_start = loc.col - 1;
-                let underline_end = usize::min(span.end, line_span.end) - line_span.start;
-                let underline_len = usize::max(underline_end - underline_start, 1);
+                let mut underline = span.clamp(line_span).relative_to(line_span.start);
+                if underline.len() == 0 {
+                    underline.end += 1;
+                }
 
                 eprintln!("   {}", label_style.paint(header));
                 eprintln!("      {}{}", line_num_style.paint(&line_num), line);
                 eprintln!(
                     "      {}{}",
-                    " ".repeat(line_num.len() + underline_start),
-                    underline_style.paint("^".repeat(underline_len))
+                    " ".repeat(line_num.len() + underline.start),
+                    underline_style.paint("^".repeat(underline.len()))
                 );
             }
 
@@ -160,9 +168,6 @@ impl ErrorReporter {
     }
 
     pub fn print(self, source: &Source) {
-        let err_style = Style::new().fg(Colour::Red).bold();
-        let header_style = Style::new().fg(Colour::Blue);
-
         if self.had_errors() {
             eprintln!("ENCOUNTERED ERROR(S) WHILE COMPILING:\n");
 

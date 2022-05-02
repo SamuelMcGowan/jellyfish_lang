@@ -20,6 +20,28 @@ impl Span {
     pub fn len(self) -> usize {
         self.end - self.start
     }
+
+    /// Bound the `Span` to be within another `Span`
+    pub fn clamp(self, other: Span) -> Self {
+        Span {
+            start: usize::max(self.start, other.start),
+            end: usize::min(self.end, other.end),
+        }
+        .normalise()
+    }
+
+    /// The `Span` relative to a position.
+    pub fn relative_to(mut self, start: usize) -> Self {
+        self.start -= start;
+        self.end -= start;
+        self
+    }
+
+    /// Ensure that the length of the `Span` is at least zero.
+    pub fn normalise(mut self) -> Self {
+        self.end = usize::max(self.start, self.end);
+        self
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -71,8 +93,6 @@ impl Source {
 
         // get rid of end of line characters
         if cfg!(target_os = "windows") {
-            end -= 2;
-        } else {
             end -= 1;
         }
 

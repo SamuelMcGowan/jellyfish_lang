@@ -11,9 +11,12 @@ pub struct Module {
     pub statements: Vec<Statement>,
 }
 
+#[derive(Debug, Clone)]
 pub enum Statement {
+    If(Box<IfStatement>),
     DebugPrint(Expr),
     ExprStmt(Expr),
+    DummyStmt,
 }
 
 #[derive(Debug, Clone)]
@@ -44,4 +47,16 @@ pub enum Expr {
 
     FieldAccess(Box<Expr>, Intern<String>),
     Call(Box<Expr>, Vec<Expr>),
+
+    Block(Vec<Statement>),
+    IfStatement(Box<IfStatement>),
+
+    DummyExpr,
+}
+
+#[derive(Debug, Clone)]
+pub struct IfStatement {
+    pub condition: Expr,
+    pub then: Expr,
+    pub else_: Option<Expr>,
 }

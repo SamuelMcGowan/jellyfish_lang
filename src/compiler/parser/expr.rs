@@ -39,6 +39,8 @@ impl<'sess> PrefixFunction<'sess> {
             punct!(Bang) => Self(Parser::parse_logical_not),
             punct!(Sub) => Self(Parser::parse_negative),
             punct!(LParen) => Self(Parser::parse_grouping),
+            punct!(LBrace) => Self(Parser::parse_block_expr),
+            kwd!(If) => Self(Parser::parse_if_expr),
             _ => return None,
         })
     }
@@ -107,8 +109,8 @@ impl<'sess> Parser<'sess> {
     fn parse_prec(&mut self, min_prec: usize) -> ParseResult<Expr> {
         let lhs_token = self.cursor.next();
 
-        let prefix_fn = PrefixFunction::from(lhs_token.kind)
-            .ok_or(Error::ExpectedExpression(lhs_token))?;
+        let prefix_fn =
+            PrefixFunction::from(lhs_token.kind).ok_or(Error::ExpectedExpression(lhs_token))?;
 
         // Parse the prefix, which is either a prefix operator or a value.
         let mut expr = prefix_fn.0(self, lhs_token.kind)?;
@@ -202,6 +204,14 @@ impl<'sess> Parser<'sess> {
         Ok(Expr::Call(Box::new(expr), args))
     }
 
+    fn parse_block_expr(&mut self, _token: TokenKind) -> ParseResult<Expr> {
+        Ok(Expr::Block(self.parse_block()?))
+    }
+
+    fn parse_if_expr(&mut self, _token: TokenKind) -> ParseResult<Expr> {
+        Ok(Expr::IfStatement(Box::new(self.parse_if_statement()?)))
+    }
+
     fn parse_var(&mut self, token: TokenKind) -> ParseResult<Expr> {
         match token {
             TokenKind::Ident(id) => Ok(Expr::Var(id)),
@@ -248,7 +258,10 @@ impl<'sess> Parser<'sess> {
     }
 
     fn parse_grouping(&mut self, _token: TokenKind) -> ParseResult<Expr> {
-        let expr = self.parse_expr()?;
+        let expr = self.parse_or_recover(Self::parse_expr, |s| {
+            s.recover_to(punct!(RParen));
+            Expr::DummyExpr
+        });
         self.expect(punct!(RParen))?;
         Ok(expr)
     }

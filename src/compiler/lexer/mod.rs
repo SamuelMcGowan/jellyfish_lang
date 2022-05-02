@@ -106,6 +106,10 @@ impl<'sess> Lexer<'sess> {
 
         match self.cursor.lexeme() {
             "print" => kwd!(DebugPrint),
+
+            "if" => kwd!(If),
+            "else" => kwd!(Else),
+
             "true" => TokenKind::Bool(true),
             "false" => TokenKind::Bool(false),
 

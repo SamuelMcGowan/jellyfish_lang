@@ -55,6 +55,13 @@ impl Value {
             _ => todo!("need to implement type checking before runtime"),
         }
     }
+
+    pub fn bool(&self) -> bool {
+        match self {
+            Self::Bool(b) => *b,
+            _ => todo!("need to implement type checking before runtime"),
+        }
+    }
 }
 
 #[derive(Debug)]

@@ -46,13 +46,13 @@ impl VM {
 
         macro_rules! read_instr {
             () => {
-                unsafe { read!().instr }
+                read!().instr()
             };
         }
 
         macro_rules! read_u8 {
             () => {
-                unsafe { read!().byte }
+                read!().byte()
             };
         }
 
@@ -66,18 +66,57 @@ impl VM {
             }};
         }
 
-        macro_rules! integer_op {
-            ($op:tt) => {{
-                let b = self.value_stack.pop().unwrap().integer();
-                let a = self.value_stack.pop().unwrap().integer();
+        macro_rules! pop {
+            () => {{
+                self.value_stack.pop().unwrap()
+            }};
+        }
 
-                self.value_stack.push(Value::Integer(a $op b));
+        macro_rules! push {
+            ($item:expr) => {{
+                self.value_stack.push($item);
+            }};
+        }
+
+        macro_rules! integer_op {
+            ($op:tt) => {
+                op!(integer $op -> Integer)
+            };
+        }
+
+        macro_rules! bool_op {
+            ($op:tt) => {
+                op!(bool $op -> Bool)
+            };
+        }
+
+        macro_rules! op {
+            ($in_type:tt $op:tt -> $out_type:tt) => {{
+                let b = pop!().$in_type();
+                let a = pop!().$in_type();
+                push!(Value::$out_type(a $op b));
+            }};
+            ($a_type:tt $op:tt $b_type:tt -> $out_type:tt) => {{
+                let b = pop!().$b_type();
+                let a = pop!().$a_type();
+                push!(Value::$out_type(a $op b));
             }};
         }
 
         loop {
             let instr = read_instr!();
             match instr {
+                Instr::OrBool => bool_op!(||),
+                Instr::AndBool => bool_op!(&&),
+                Instr::NotBool => {
+                    let a = !pop!().bool();
+                    push!(Value::Bool(a))
+                }
+
+                Instr::Equal => op!(integer == -> Bool),
+                Instr::LT => op!(integer < -> Bool),
+                Instr::LTEqual => op!(integer <= -> Bool),
+
                 Instr::AddInt => integer_op!(+),
                 Instr::SubInt => integer_op!(-),
                 Instr::MulInt => integer_op!(*),
@@ -85,24 +124,34 @@ impl VM {
                     if self.value_stack.last().unwrap().integer() == 0 {
                         return Err(RuntimeError::DivisionByZero);
                     }
-                    integer_op!(/)
+                    integer_op!(/);
                 }
 
                 Instr::LoadConstantU8 => {
                     let constant = frame.chunk.constants[read_u8!() as usize].clone();
-                    self.value_stack.push(constant);
+                    push!(constant);
                 }
 
                 Instr::LoadConstantU32 => {
                     let constant = frame.chunk.constants[read_u32!() as usize].clone();
-                    self.value_stack.push(constant);
+                    push!(constant);
                 }
 
-                Instr::Pop => drop(self.value_stack.pop()),
+                Instr::Pop => drop(pop!()),
+
+                Instr::JumpU32 => {
+                    frame.ip = read_u32!();
+                }
+                Instr::JumpNotU32 => {
+                    let dest = read_u32!();
+                    if !pop!().bool() {
+                        frame.ip = dest;
+                    }
+                }
 
                 Instr::Return => break,
 
-                Instr::DebugPrint => println!("{:?}", self.value_stack.pop().unwrap()),
+                Instr::DebugPrint => println!("{:?}", pop!()),
 
                 _ => todo!("implement rest of instructions"),
             }

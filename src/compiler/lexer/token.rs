@@ -67,6 +67,8 @@ pub enum Punctuation {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Keyword {
     DebugPrint,
+    If,
+    Else,
 }
 
 #[derive(Debug, Clone, Copy)]
