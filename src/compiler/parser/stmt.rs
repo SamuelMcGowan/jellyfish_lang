@@ -8,7 +8,7 @@ impl<'sess> Parser<'sess> {
         })
     }
 
-    pub fn parse_statement_inner(&mut self) -> ParseResult<Statement> {
+    pub fn parse_statement_inner(&mut self) -> JlyResult<Statement> {
         let statement = match self.cursor.peek().kind {
             kwd!(If) => {
                 self.cursor.next();
@@ -29,7 +29,7 @@ impl<'sess> Parser<'sess> {
         Ok(statement)
     }
 
-    pub fn parse_if_statement(&mut self) -> ParseResult<IfStatement> {
+    pub fn parse_if_statement(&mut self) -> JlyResult<IfStatement> {
         let condition = self.parse_expr()?;
 
         let then = self.parse_if_arm()?;
@@ -51,7 +51,7 @@ impl<'sess> Parser<'sess> {
         })
     }
 
-    fn parse_if_arm(&mut self) -> ParseResult<Expr> {
+    fn parse_if_arm(&mut self) -> JlyResult<Expr> {
         let token = self.cursor.peek();
         if token.kind == punct!(LBrace) || token.kind == punct!(LParen) {
             self.parse_expr()
@@ -60,7 +60,7 @@ impl<'sess> Parser<'sess> {
         }
     }
 
-    pub fn parse_block(&mut self) -> ParseResult<Vec<Statement>> {
+    pub fn parse_block(&mut self) -> JlyResult<Vec<Statement>> {
         let mut statements = vec![];
 
         while !(self.cursor.eof() || self.cursor.matches(punct!(RBrace))) {

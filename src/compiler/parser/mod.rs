@@ -29,7 +29,7 @@ impl<'sess> Parser<'sess> {
         Module { statements }
     }
 
-    fn parse_or_recover<T, F: FnMut(&mut Self) -> ParseResult<T>, R: FnMut(&mut Self) -> T>(
+    fn parse_or_recover<T, F: FnMut(&mut Self) -> JlyResult<T>, R: FnMut(&mut Self) -> T>(
         &mut self,
         mut f: F,
         mut recover: R,
@@ -54,9 +54,9 @@ impl<'sess> Parser<'sess> {
 
     fn parse_comma_list<T>(
         &mut self,
-        f: fn(&mut Self) -> ParseResult<T>,
+        f: fn(&mut Self) -> JlyResult<T>,
         until: TokenKind,
-    ) -> ParseResult<Vec<T>> {
+    ) -> JlyResult<Vec<T>> {
         let mut items = vec![f(self)?];
         while self.cursor.eat(punct!(Comma)) && self.cursor.peek().kind != until {
             let item = f(self)?;
@@ -65,7 +65,7 @@ impl<'sess> Parser<'sess> {
         Ok(items)
     }
 
-    fn expect(&mut self, kind: TokenKind) -> ParseResult<Token> {
+    fn expect(&mut self, kind: TokenKind) -> JlyResult<Token> {
         let token = self.cursor.next();
         if token.kind == kind {
             Ok(token)

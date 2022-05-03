@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::source::{Source, Span};
 
-pub type ParseResult<T> = Result<T, Error>;
+pub type JlyResult<T> = Result<T, Error>;
 
 pub enum Error {
     FileNotFound(PathBuf),
