@@ -45,9 +45,6 @@ pub enum Expr {
     Mod(Box<Expr>, Box<Expr>),
     Pow(Box<Expr>, Box<Expr>),
 
-    FieldAccess(Box<Expr>, Intern<String>),
-    Call(Box<Expr>, Vec<Expr>),
-
     Block(Vec<Statement>),
     IfStatement(Box<IfStatement>),
 

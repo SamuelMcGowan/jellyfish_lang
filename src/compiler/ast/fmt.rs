@@ -35,19 +35,6 @@ impl Display for Expr {
             Self::Mod(a, b) => write!(f, "({} % {})", a, b),
             Self::Pow(a, b) => write!(f, "({} ^ {})", a, b),
 
-            Self::FieldAccess(a, id) => write!(f, "({}.{})", a, id),
-            Self::Call(a, b) => {
-                write!(
-                    f,
-                    "{}({})",
-                    a,
-                    b.iter()
-                        .map(|s| format!("{}", s))
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                )
-            }
-
             Self::Block(statements) => {
                 write!(
                     f,

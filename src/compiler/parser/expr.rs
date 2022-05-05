@@ -15,8 +15,6 @@ enum Prec {
     Factor,
     Exponent,
     Negative,
-
-    Call,
 }
 
 /// Associativity of an infix operator.
@@ -92,10 +90,6 @@ impl<'sess> InfixRule<'sess> {
             punct!(Mul) | punct!(Div) | punct!(Mod) => rule!(Basic, Factor),
             punct!(Pow) => rule!(Basic, Exponent, Right),
 
-            punct!(Dot) => rule!(Basic, Call),
-
-            punct!(LParen) => rule!(Func(Parser::parse_call), Call),
-
             _ => return None,
         })
     }
@@ -152,7 +146,7 @@ impl<'sess> Parser<'sess> {
         lhs: Expr,
         rhs: Expr,
         _lhs_token: Token,
-        rhs_token: Token,
+        _rhs_token: Token,
     ) -> JlyResult<Expr> {
         let lhs = Box::new(lhs);
         let rhs = Box::new(rhs);
@@ -179,29 +173,8 @@ impl<'sess> Parser<'sess> {
             punct!(Mod) => Expr::Mod(lhs, rhs),
             punct!(Pow) => Expr::Pow(lhs, rhs),
 
-            punct!(Dot) => match *rhs {
-                Expr::Var(id) => Expr::FieldAccess(lhs, id),
-                _ => {
-                    return Err(Error::InvalidFieldAccess(rhs_token));
-                }
-            },
-
             _ => unreachable!(),
         })
-    }
-
-    fn parse_call(&mut self, expr: Expr) -> JlyResult<Expr> {
-        self.expect(punct!(LParen))?;
-
-        let args = if self.cursor.matches(punct!(RParen)) {
-            vec![]
-        } else {
-            self.parse_comma_list(Self::parse_expr, punct!(RParen))?
-        };
-
-        self.expect(punct!(RParen))?;
-
-        Ok(Expr::Call(Box::new(expr), args))
     }
 
     fn parse_block_expr(&mut self, _token: TokenKind) -> JlyResult<Expr> {
