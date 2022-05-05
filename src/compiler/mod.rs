@@ -1,4 +1,4 @@
-use crate::compiler::codegen::BytecodeEmitter;
+use passes::codegen::BytecodeEmitter;
 use crate::runtime::chunk::Chunk;
 use crate::runtime::CompiledProgram;
 use crate::Source;
@@ -8,10 +8,10 @@ use self::lexer::Lexer;
 use self::parser::Parser;
 
 pub mod ast;
-pub mod codegen;
 pub mod diagnostic;
 pub mod lexer;
 pub mod parser;
+pub mod passes;
 
 impl<'sess> CompiledProgram<'sess> {
     #[allow(clippy::result_unit_err)]
