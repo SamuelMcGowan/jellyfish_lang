@@ -3,4 +3,7 @@ if 12 > 10 {
 } else {
     print("10 > 12");
 }
+
 print("was I correct?");
+
+print(8 ^ 2);

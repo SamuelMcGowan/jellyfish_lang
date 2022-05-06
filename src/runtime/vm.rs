@@ -1,3 +1,4 @@
+use crate::runtime::value::Type;
 use crate::CompiledProgram;
 
 use super::chunk::{Chunk, Instr};
@@ -6,6 +7,10 @@ use super::value::Value;
 #[derive(Debug, Clone)]
 pub enum RuntimeError {
     DivisionByZero,
+    TypeError {
+        expected: Type,
+        found: Type,
+    },
 }
 
 pub struct CallFrame {
@@ -66,6 +71,12 @@ impl VM {
             }};
         }
 
+        macro_rules! peek {
+            () => {{
+                self.value_stack.last().unwrap()
+            }};
+        }
+
         macro_rules! pop {
             () => {{
                 self.value_stack.pop().unwrap()
@@ -92,14 +103,22 @@ impl VM {
 
         macro_rules! op {
             ($in_type:tt $op:tt -> $out_type:tt) => {{
-                let b = pop!().$in_type();
-                let a = pop!().$in_type();
+                let b = pop!().$in_type()?;
+                let a = pop!().$in_type()?;
                 push!(Value::$out_type(a $op b));
             }};
             ($a_type:tt $op:tt $b_type:tt -> $out_type:tt) => {{
-                let b = pop!().$b_type();
-                let a = pop!().$a_type();
+                let b = pop!().$b_type()?;
+                let a = pop!().$a_type()?;
                 push!(Value::$out_type(a $op b));
+            }};
+        }
+
+        macro_rules! vm_assert {
+            ($case:expr, $err:ident) => {{
+                if !$case {
+                    return Err(RuntimeError::$err);
+                }
             }};
         }
 
@@ -109,7 +128,7 @@ impl VM {
                 Instr::OrBool => bool_op!(||),
                 Instr::AndBool => bool_op!(&&),
                 Instr::NotBool => {
-                    let a = !pop!().bool();
+                    let a = !pop!().bool()?;
                     push!(Value::Bool(a))
                 }
 
@@ -121,10 +140,17 @@ impl VM {
                 Instr::SubInt => integer_op!(-),
                 Instr::MulInt => integer_op!(*),
                 Instr::DivInt => {
-                    if self.value_stack.last().unwrap().integer() == 0 {
-                        return Err(RuntimeError::DivisionByZero);
-                    }
+                    vm_assert!(peek!().integer()? != 0, DivisionByZero);
                     integer_op!(/);
+                }
+                Instr::ModInt => {
+                    vm_assert!(peek!().integer()? != 0, DivisionByZero);
+                    integer_op!(%);
+                }
+                Instr::PowInt => {
+                    let b = pop!().integer()? as u32;
+                    let a = pop!().integer()?;
+                    push!(Value::Integer(a.pow(b)));
                 }
 
                 Instr::LoadConstantU8 => {
@@ -147,7 +173,7 @@ impl VM {
                 }
                 Instr::JumpNotU32 => {
                     let dest = read_u32!();
-                    if !pop!().bool() {
+                    if !pop!().bool()? {
                         frame.ip = dest;
                     }
                 }
@@ -155,8 +181,6 @@ impl VM {
                 Instr::Return => break,
 
                 Instr::DebugPrint => println!("{}", pop!()),
-
-                _ => todo!("implement rest of instructions"),
             }
         }
 

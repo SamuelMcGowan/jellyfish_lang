@@ -79,7 +79,6 @@ impl BytecodeEmitter for Module {
             stmt.emit(chunk);
         }
 
-        // TODO: separate exit instruction?
         chunk.emit_instr(Instr::Return);
     }
 }
@@ -128,8 +127,8 @@ impl BytecodeEmitter for Expr {
             ExprKind::Sub(a, b) => binary_op!(a SubInt b),
             ExprKind::Mul(a, b) => binary_op!(a MulInt b),
             ExprKind::Div(a, b) => binary_op!(a DivInt b),
-            ExprKind::Mod(a, b) => binary_op!(a Mod b),
-            ExprKind::Pow(a, b) => binary_op!(a Pow b),
+            ExprKind::Mod(a, b) => binary_op!(a ModInt b),
+            ExprKind::Pow(a, b) => binary_op!(a PowInt b),
 
             ExprKind::Block(statements) => {
                 for statement in statements {

@@ -1,11 +1,12 @@
 use std::fmt::Debug;
 use std::rc::Rc;
 
+use crate::runtime::vm::RuntimeError;
 use internment::Intern;
 
 use super::chunk::Chunk;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Type {
     Object,
     String,
@@ -52,17 +53,23 @@ impl Value {
         }
     }
 
-    pub fn integer(&self) -> u64 {
+    pub fn integer(&self) -> Result<u64, RuntimeError> {
         match self {
-            Self::Integer(n) => *n,
-            _ => todo!("need to implement type checking before runtime"),
+            Self::Integer(n) => Ok(*n),
+            other => Err(RuntimeError::TypeError {
+                expected: Type::Integer,
+                found: other.ty(),
+            }),
         }
     }
 
-    pub fn bool(&self) -> bool {
+    pub fn bool(&self) -> Result<bool, RuntimeError> {
         match self {
-            Self::Bool(b) => *b,
-            _ => todo!("need to implement type checking before runtime"),
+            Self::Bool(b) => Ok(*b),
+            other => Err(RuntimeError::TypeError {
+                expected: Type::Bool,
+                found: other.ty(),
+            }),
         }
     }
 }

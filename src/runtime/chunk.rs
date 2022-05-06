@@ -19,8 +19,8 @@ pub enum Instr {
     SubInt,
     MulInt,
     DivInt,
-    Mod,
-    Pow,
+    ModInt,
+    PowInt,
 
     LoadConstantU8,
     LoadConstantU32,
