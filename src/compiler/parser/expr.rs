@@ -39,6 +39,7 @@ impl<'sess> PrefixFunction<'sess> {
             punct!(LParen) => Self(Parser::parse_grouping),
             punct!(LBrace) => Self(Parser::parse_block_expr),
             kwd!(If) => Self(Parser::parse_if_expr),
+            kwd!(DebugPrint) => Self(Parser::parse_print),
             _ => return None,
         })
     }
@@ -180,6 +181,12 @@ impl<'sess> Parser<'sess> {
 
     fn parse_if_expr(&mut self, _token: TokenKind) -> JlyResult<Expr> {
         Ok(expr!(boxed IfStatement(self.parse_if_statement()?)))
+    }
+
+    fn parse_print(&mut self, _token: TokenKind) -> JlyResult<Expr> {
+        let lparen = self.expect(punct!(LParen))?.kind;
+        let expr = self.parse_grouping(lparen)?;
+        Ok(expr!(boxed DebugPrint(expr)))
     }
 
     fn parse_var(&mut self, token: TokenKind) -> JlyResult<Expr> {

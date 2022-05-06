@@ -1,4 +1,4 @@
-use crate::compiler::ast::{Expr, IfStatement, Module, Statement, ExprKind};
+use crate::compiler::ast::{Expr, ExprKind, IfStatement, Module, Statement};
 use crate::runtime::chunk::{Chunk, Instr};
 use crate::runtime::value::Value;
 
@@ -86,18 +86,8 @@ impl BytecodeEmitter for Module {
 
 impl BytecodeEmitter for Statement {
     fn emit(&self, chunk: &mut Chunk) {
-        match self {
-            Self::If(if_statement) => if_statement.emit(chunk),
-            Self::DebugPrint(expr) => {
-                expr.emit(chunk);
-                chunk.emit_instr(Instr::DebugPrint);
-            }
-            Self::ExprStmt(expr) => {
-                expr.emit(chunk);
-                chunk.emit_instr(Instr::Pop);
-            }
-            Self::DummyStmt => unreachable!(),
-        }
+        self.expr.emit(chunk);
+        chunk.emit_instr(Instr::Pop);
     }
 }
 
@@ -112,6 +102,7 @@ impl BytecodeEmitter for Expr {
         }
 
         match &self.kind {
+            ExprKind::Var(_ident) => todo!("emit bytecode for variables"),
             ExprKind::Value(value) => {
                 chunk.emit_constant(value.clone());
             }
@@ -144,13 +135,16 @@ impl BytecodeEmitter for Expr {
                 for statement in statements {
                     statement.emit(chunk);
                 }
-                // TODO: remember to pop values here
+                chunk.emit_instr(Instr::LoadUnit);
             }
             ExprKind::IfStatement(if_statement) => if_statement.emit(chunk),
+            ExprKind::DebugPrint(expr) => {
+                expr.emit(chunk);
+                chunk.emit_instr(Instr::DebugPrint);
+                chunk.emit_instr(Instr::LoadUnit);
+            }
 
             ExprKind::DummyExpr => unreachable!(),
-
-            other => todo!("can't emit bytecode for expression {}", other),
         }
     }
 }

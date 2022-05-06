@@ -4,7 +4,7 @@ impl<'sess> Parser<'sess> {
     pub fn parse_statement(&mut self) -> Statement {
         self.parse_or_recover(Self::parse_statement_inner, |s| {
             s.recover_past(punct!(Semicolon));
-            Statement::DummyStmt
+            Statement::new(expr!(DummyExpr))
         })
     }
 
@@ -12,18 +12,12 @@ impl<'sess> Parser<'sess> {
         let statement = match self.cursor.peek().kind {
             kwd!(If) => {
                 self.cursor.next();
-                Statement::If(Box::new(self.parse_if_statement()?))
-            }
-            kwd!(DebugPrint) => {
-                self.cursor.next();
-                let expr = self.parse_expr()?;
-                self.expect(punct!(Semicolon))?;
-                Statement::DebugPrint(expr)
+                Statement::new(expr!(boxed IfStatement(self.parse_if_statement()?)))
             }
             _ => {
                 let expr = self.parse_expr()?;
                 self.expect(punct!(Semicolon))?;
-                Statement::ExprStmt(expr)
+                Statement::new(expr)
             }
         };
         Ok(statement)

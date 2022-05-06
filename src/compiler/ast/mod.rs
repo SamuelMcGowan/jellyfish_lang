@@ -12,11 +12,14 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone)]
-pub enum Statement {
-    If(Box<IfStatement>),
-    DebugPrint(Expr),
-    ExprStmt(Expr),
-    DummyStmt,
+pub struct Statement {
+    pub expr: Expr,
+}
+
+impl Statement {
+    pub fn new(expr: Expr) -> Self {
+        Self { expr }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -46,7 +49,9 @@ pub enum ExprKind {
     Pow(Box<Expr>, Box<Expr>),
 
     Block(Vec<Statement>),
+
     IfStatement(Box<IfStatement>),
+    DebugPrint(Box<Expr>),
 
     DummyExpr,
 }

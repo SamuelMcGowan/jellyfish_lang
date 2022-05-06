@@ -12,6 +12,7 @@ pub enum Type {
     Integer,
     Float,
     Bool,
+    Unit,
 }
 
 #[derive(Debug, Clone)]
@@ -21,6 +22,7 @@ pub enum Value {
     Integer(u64),
     Float(u64),
     Bool(bool),
+    Unit,
 }
 
 impl PartialEq for Value {
@@ -46,6 +48,7 @@ impl Value {
             Self::Integer(_) => Type::Integer,
             Self::Float(_) => Type::Float,
             Self::Bool(_) => Type::Bool,
+            Self::Unit => Type::Unit,
         }
     }
 

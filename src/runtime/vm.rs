@@ -136,6 +136,9 @@ impl VM {
                     let constant = frame.chunk.constants[read_u32!() as usize].clone();
                     push!(constant);
                 }
+                Instr::LoadUnit => {
+                    push!(Value::Unit)
+                }
 
                 Instr::Pop => drop(pop!()),
 

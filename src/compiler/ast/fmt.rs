@@ -54,6 +54,7 @@ impl Display for ExprKind {
             }
 
             Self::IfStatement(if_statement) => write!(f, "{}", if_statement),
+            Self::DebugPrint(expr) => write!(f, "print({})", expr),
 
             Self::DummyExpr => write!(f, "DummyExpr"),
         }
@@ -62,12 +63,7 @@ impl Display for ExprKind {
 
 impl Display for Statement {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match self {
-            Self::If(if_statement) => write!(f, "{}", if_statement),
-            Self::DebugPrint(expr) => write!(f, "print {}", expr),
-            Self::ExprStmt(expr) => write!(f, "Stmt({})", expr),
-            Self::DummyStmt => write!(f, "DummyStmt"),
-        }
+        write!(f, "Statement({})", self.expr)
     }
 }
 
@@ -89,6 +85,7 @@ impl Display for Value {
             Self::Integer(n) => write!(f, "{}i", *n),
             Self::Float(n) => write!(f, "{}f", f64::from_bits(*n)),
             Self::Bool(b) => write!(f, "{:?}", b),
+            Self::Unit => write!(f, "()"),
         }
     }
 }
