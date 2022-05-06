@@ -10,7 +10,6 @@ pub enum Error {
     UnexpectedToken { expected: TokenKind, found: Token },
     ExpectedExpression(Token),
     ExpectedIdent(Token),
-    ExpectedIfArm(Token),
 }
 
 impl Error {
@@ -31,12 +30,6 @@ impl Error {
             Self::ExpectedIdent(found) => ErrorReport::new("unexpected token")
                 .with_labelled_source(
                     format!("expected an identifier but found {:?}", found.kind),
-                    found.span,
-                ),
-
-            Self::ExpectedIfArm(found) => ErrorReport::new("unexpected token")
-                .with_labelled_source(
-                    format!("expected an if statement arm but found {:?}", found.kind),
                     found.span,
                 ),
         }

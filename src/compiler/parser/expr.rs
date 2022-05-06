@@ -37,8 +37,6 @@ impl<'sess> PrefixFunction<'sess> {
             punct!(Bang) => Self(Parser::parse_logical_not),
             punct!(Sub) => Self(Parser::parse_negative),
             punct!(LParen) => Self(Parser::parse_grouping),
-            punct!(LBrace) => Self(Parser::parse_block_expr),
-            kwd!(If) => Self(Parser::parse_if_expr),
             kwd!(DebugPrint) => Self(Parser::parse_print),
             _ => return None,
         })
@@ -173,52 +171,6 @@ impl<'sess> Parser<'sess> {
 
             _ => unreachable!(),
         })
-    }
-
-    fn parse_block_expr(&mut self, _token: TokenKind) -> JlyResult<Expr> {
-        Ok(expr!(Block(self.parse_block()?)))
-    }
-
-    pub fn parse_if_expr(&mut self, _token: TokenKind) -> JlyResult<Expr> {
-        let condition = self.parse_expr()?;
-
-        let then = self.parse_if_arm()?;
-
-        let else_ = if self.cursor.eat(kwd!(Else)) {
-            Some(if self.cursor.matches(kwd!(If)) {
-                self.parse_expr()?
-            } else {
-                self.parse_if_arm()?
-            })
-        } else {
-            None
-        };
-
-        Ok(expr!(boxed If(IfExpr {
-            condition,
-            then,
-            else_,
-        })))
-    }
-
-    fn parse_if_arm(&mut self) -> JlyResult<Expr> {
-        let token = self.cursor.peek();
-        if token.kind == punct!(LBrace) || token.kind == punct!(LParen) {
-            self.parse_expr()
-        } else {
-            Err(Error::ExpectedIfArm(self.cursor.next()))
-        }
-    }
-
-    fn parse_block(&mut self) -> JlyResult<Vec<Statement>> {
-        let mut statements = vec![];
-
-        while !(self.cursor.eof() || self.cursor.matches(punct!(RBrace))) {
-            statements.push(self.parse_statement());
-        }
-        self.expect(punct!(RBrace))?;
-
-        Ok(statements)
     }
 
     fn parse_print(&mut self, _token: TokenKind) -> JlyResult<Expr> {

@@ -12,15 +12,29 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone)]
+pub struct Block {
+    pub statements: Vec<Statement>,
+}
+
+#[derive(Debug, Clone)]
 pub enum Statement {
     Expr(Expr),
+    Block(Block),
     VarDecl(VarDecl),
+    If(IfStatement),
 }
 
 #[derive(Debug, Clone)]
 pub struct VarDecl {
     pub ident: Intern<String>,
     pub value: Option<Box<Expr>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct IfStatement {
+    pub condition: Expr,
+    pub then: Block,
+    pub else_: Option<Box<Statement>>,
 }
 
 #[derive(Debug, Clone)]
@@ -49,9 +63,6 @@ pub enum ExprKind {
     Mod(Box<Expr>, Box<Expr>),
     Pow(Box<Expr>, Box<Expr>),
 
-    Block(Vec<Statement>),
-
-    If(Box<IfExpr>),
     DebugPrint(Box<Expr>),
 
     DummyExpr,
@@ -84,10 +95,3 @@ macro_rules! expr {
 }
 
 pub(crate) use expr;
-
-#[derive(Debug, Clone)]
-pub struct IfExpr {
-    pub condition: Expr,
-    pub then: Expr,
-    pub else_: Option<Expr>,
-}

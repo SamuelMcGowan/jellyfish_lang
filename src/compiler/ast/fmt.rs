@@ -41,19 +41,6 @@ impl Display for ExprKind {
             Self::Mod(a, b) => write!(f, "({} % {})", a, b),
             Self::Pow(a, b) => write!(f, "({} ^ {})", a, b),
 
-            Self::Block(statements) => {
-                write!(
-                    f,
-                    "{{{}}}",
-                    statements
-                        .iter()
-                        .map(|s| format!("{}", s))
-                        .collect::<Vec<String>>()
-                        .join(", ")
-                )
-            }
-
-            Self::If(if_expr) => write!(f, "{}", if_expr),
             Self::DebugPrint(expr) => write!(f, "print({})", expr),
 
             Self::DummyExpr => write!(f, "DummyExpr"),
@@ -65,15 +52,37 @@ impl Display for Statement {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Expr(expr) => write!(f, "Statement({})", expr),
-            Self::VarDecl(var_decl) => match &var_decl.value {
-                Some(expr) => write!(f, "(let {} = {})", var_decl.ident, expr),
-                None => write!(f, "(let {})", var_decl.ident),
-            },
+            Self::Block(block) => block.fmt(f),
+            Self::VarDecl(var_decl) => var_decl.fmt(f),
+            Self::If(if_statement) => if_statement.fmt(f)
         }
     }
 }
 
-impl Display for IfExpr {
+impl Display for Block {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(
+            f,
+            "{}",
+            self.statements
+                .iter()
+                .map(|stmt| format!("{}", stmt))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+
+impl Display for VarDecl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        match &self.value {
+            Some(expr) => write!(f, "(let {} = {})", self.ident, expr),
+            None => write!(f, "(let {})", self.ident),
+        }
+    }
+}
+
+impl Display for IfStatement {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "(if {} then {}", self.condition, self.then)?;
         if let Some(else_) = &self.else_ {

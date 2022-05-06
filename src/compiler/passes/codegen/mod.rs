@@ -1,4 +1,4 @@
-use crate::compiler::ast::{Expr, ExprKind, IfExpr, Module, Statement};
+use crate::compiler::ast::*;
 use crate::runtime::chunk::{Chunk, Instr};
 use crate::runtime::value::Value;
 
@@ -90,7 +90,39 @@ impl BytecodeEmitter for Statement {
                 expr.emit(chunk);
                 chunk.emit_instr(Instr::Pop);
             }
-            Self::VarDecl(var_decl) => todo!("emit code for var decls"),
+            Self::Block(block) => block.emit(chunk),
+            Self::VarDecl(_var_decl) => todo!("emit code for var decls"),
+            Self::If(if_statement) => if_statement.emit(chunk),
+        }
+    }
+}
+
+impl BytecodeEmitter for Block {
+    fn emit(&self, chunk: &mut Chunk) {
+        for statement in &self.statements {
+            statement.emit(chunk);
+        }
+    }
+}
+
+impl BytecodeEmitter for IfStatement {
+    fn emit(&self, chunk: &mut Chunk) {
+        self.condition.emit(chunk);
+
+        if let Some(else_) = &self.else_ {
+            let else_jump = chunk.new_jump(JumpKind::JumpNot);
+
+            self.then.emit(chunk);
+            let end_jump = chunk.new_jump(JumpKind::Jump);
+
+            chunk.jump_arrive(else_jump);
+            else_.emit(chunk);
+
+            chunk.jump_arrive(end_jump);
+        } else {
+            let end_jump = chunk.new_jump(JumpKind::JumpNot);
+            self.then.emit(chunk);
+            chunk.jump_arrive(end_jump);
         }
     }
 }
@@ -135,13 +167,6 @@ impl BytecodeEmitter for Expr {
             ExprKind::Mod(a, b) => binary_op!(a ModInt b),
             ExprKind::Pow(a, b) => binary_op!(a PowInt b),
 
-            ExprKind::Block(statements) => {
-                for statement in statements {
-                    statement.emit(chunk);
-                }
-                chunk.emit_instr(Instr::LoadUnit);
-            }
-            ExprKind::If(if_expr) => if_expr.emit(chunk),
             ExprKind::DebugPrint(expr) => {
                 expr.emit(chunk);
                 chunk.emit_instr(Instr::DebugPrint);
@@ -149,28 +174,6 @@ impl BytecodeEmitter for Expr {
             }
 
             ExprKind::DummyExpr => unreachable!(),
-        }
-    }
-}
-
-impl BytecodeEmitter for IfExpr {
-    fn emit(&self, chunk: &mut Chunk) {
-        self.condition.emit(chunk);
-
-        if let Some(else_) = &self.else_ {
-            let else_jump = chunk.new_jump(JumpKind::JumpNot);
-
-            self.then.emit(chunk);
-            let end_jump = chunk.new_jump(JumpKind::Jump);
-
-            chunk.jump_arrive(else_jump);
-            else_.emit(chunk);
-
-            chunk.jump_arrive(end_jump);
-        } else {
-            let end_jump = chunk.new_jump(JumpKind::JumpNot);
-            self.then.emit(chunk);
-            chunk.jump_arrive(end_jump);
         }
     }
 }
