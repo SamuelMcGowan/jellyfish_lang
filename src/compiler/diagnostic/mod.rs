@@ -1,26 +1,20 @@
 use ansi_term::{Colour, Style};
 
 use crate::compiler::lexer::token::{Token, TokenKind};
-use std::path::PathBuf;
 
 use crate::source::{Source, Span};
 
 pub type JlyResult<T> = Result<T, Error>;
 
 pub enum Error {
-    FileNotFound(PathBuf),
     UnexpectedToken { expected: TokenKind, found: Token },
     ExpectedExpression(Token),
     ExpectedIfArm(Token),
-    InvalidFieldAccess(Token),
 }
 
 impl Error {
     pub fn report(&self) -> ErrorReport {
         match self {
-            Self::FileNotFound(path) => ErrorReport::new("file not found")
-                .with_label(format!("couldn't find file `{}`", path.display())),
-
             Self::UnexpectedToken { expected, found } => ErrorReport::new("unexpected token")
                 .with_labelled_source(
                     format!("expected {:?} but found {:?}", expected, found.kind),
@@ -38,10 +32,6 @@ impl Error {
                     format!("expected an if statement arm but found {:?}", found.kind),
                     found.span,
                 ),
-
-            Self::InvalidFieldAccess(found) => ErrorReport::new("invalid field access")
-                .with_labelled_source(format!("invalid field access {:?}", found.kind), found.span)
-                .with_hint("field access must be an identifier".to_string()),
         }
     }
 }

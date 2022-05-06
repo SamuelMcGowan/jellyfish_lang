@@ -1,5 +1,5 @@
 use crate::compiler::ast::{Expr, IfStatement, Module, Statement, ExprKind};
-use crate::runtime::chunk::{Chunk, Instr, Opcode};
+use crate::runtime::chunk::{Chunk, Instr};
 use crate::runtime::value::Value;
 
 enum JumpKind {
