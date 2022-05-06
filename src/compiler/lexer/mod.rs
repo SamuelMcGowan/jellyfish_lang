@@ -110,6 +110,8 @@ impl<'sess> Lexer<'sess> {
             "if" => kwd!(If),
             "else" => kwd!(Else),
 
+            "let" => kwd!(Let),
+
             "true" => TokenKind::Bool(true),
             "false" => TokenKind::Bool(false),
 

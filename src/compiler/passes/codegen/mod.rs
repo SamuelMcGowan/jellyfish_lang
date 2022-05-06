@@ -90,6 +90,7 @@ impl BytecodeEmitter for Statement {
                 expr.emit(chunk);
                 chunk.emit_instr(Instr::Pop);
             }
+            Self::VarDecl(var_decl) => todo!("emit code for var decls"),
         }
     }
 }

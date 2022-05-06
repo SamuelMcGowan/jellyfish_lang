@@ -14,6 +14,13 @@ pub struct Module {
 #[derive(Debug, Clone)]
 pub enum Statement {
     Expr(Expr),
+    VarDecl(VarDecl),
+}
+
+#[derive(Debug, Clone)]
+pub struct VarDecl {
+    pub ident: Intern<String>,
+    pub value: Option<Box<Expr>>,
 }
 
 #[derive(Debug, Clone)]

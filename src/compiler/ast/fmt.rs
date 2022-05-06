@@ -65,6 +65,10 @@ impl Display for Statement {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         match self {
             Self::Expr(expr) => write!(f, "Statement({})", expr),
+            Self::VarDecl(var_decl) => match &var_decl.value {
+                Some(expr) => write!(f, "(let {} = {})", var_decl.ident, expr),
+                None => write!(f, "(let {})", var_decl.ident),
+            },
         }
     }
 }

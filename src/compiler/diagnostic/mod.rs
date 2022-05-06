@@ -9,6 +9,7 @@ pub type JlyResult<T> = Result<T, Error>;
 pub enum Error {
     UnexpectedToken { expected: TokenKind, found: Token },
     ExpectedExpression(Token),
+    ExpectedIdent(Token),
     ExpectedIfArm(Token),
 }
 
@@ -24,6 +25,12 @@ impl Error {
             Self::ExpectedExpression(found) => ErrorReport::new("unexpected token")
                 .with_labelled_source(
                     format!("expected an expression but found {:?}", found.kind),
+                    found.span,
+                ),
+
+            Self::ExpectedIdent(found) => ErrorReport::new("unexpected token")
+                .with_labelled_source(
+                    format!("expected an identifier but found {:?}", found.kind),
                     found.span,
                 ),
 
