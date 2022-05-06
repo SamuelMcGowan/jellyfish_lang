@@ -10,7 +10,7 @@ impl<'sess> Parser<'sess> {
     pub fn parse_statement(&mut self) -> Statement {
         self.parse_or_recover(Self::parse_statement_inner, |s| {
             s.recover_past(punct!(Semicolon));
-            Statement::new(expr!(DummyExpr))
+            Statement::Expr(expr!(DummyExpr))
         })
     }
 
@@ -23,6 +23,6 @@ impl<'sess> Parser<'sess> {
             self.cursor.eat(punct!(Semicolon));
         }
 
-        Ok(Statement::new(expr))
+        Ok(Statement::Expr(expr))
     }
 }

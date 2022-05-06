@@ -85,8 +85,12 @@ impl BytecodeEmitter for Module {
 
 impl BytecodeEmitter for Statement {
     fn emit(&self, chunk: &mut Chunk) {
-        self.expr.emit(chunk);
-        chunk.emit_instr(Instr::Pop);
+        match self {
+            Self::Expr(expr) => {
+                expr.emit(chunk);
+                chunk.emit_instr(Instr::Pop);
+            }
+        }
     }
 }
 

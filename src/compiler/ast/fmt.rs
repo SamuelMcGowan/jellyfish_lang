@@ -63,7 +63,9 @@ impl Display for ExprKind {
 
 impl Display for Statement {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "Statement({})", self.expr)
+        match self {
+            Self::Expr(expr) => write!(f, "Statement({})", expr),
+        }
     }
 }
 

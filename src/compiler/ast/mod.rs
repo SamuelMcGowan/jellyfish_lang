@@ -12,14 +12,8 @@ pub struct Module {
 }
 
 #[derive(Debug, Clone)]
-pub struct Statement {
-    pub expr: Expr,
-}
-
-impl Statement {
-    pub fn new(expr: Expr) -> Self {
-        Self { expr }
-    }
+pub enum Statement {
+    Expr(Expr),
 }
 
 #[derive(Debug, Clone)]
