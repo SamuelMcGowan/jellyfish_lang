@@ -1,10 +1,10 @@
-#[derive(Clone, PartialEq, Eq)]
-pub enum InferredType {
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Type {
     Builtin(BuiltinType),
     Unknown,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BuiltinType {
     String,
     Integer,
@@ -13,17 +13,12 @@ pub enum BuiltinType {
     Unit,
 }
 
-pub fn unify_types(
-    a: InferredType,
-    b: InferredType,
-) -> Result<InferredType, (InferredType, InferredType)> {
+pub fn unify_types(a: Type, b: Type) -> Result<Type, (Type, Type)> {
     match (a, b) {
-        (a, InferredType::Unknown) => Ok(a),
-        (InferredType::Unknown, b) => Ok(b),
+        (a, Type::Unknown) => Ok(a),
+        (Type::Unknown, b) => Ok(b),
 
-        (InferredType::Builtin(a), InferredType::Builtin(b)) if a == b => {
-            Ok(InferredType::Builtin(a))
-        }
+        (Type::Builtin(a), Type::Builtin(b)) if a == b => Ok(Type::Builtin(a)),
 
         (a, b) => Err((a, b)),
     }
