@@ -154,7 +154,7 @@ impl VM {
 
                 Instr::Return => break,
 
-                Instr::DebugPrint => println!("{:?}", pop!()),
+                Instr::DebugPrint => println!("{}", pop!()),
 
                 _ => todo!("implement rest of instructions"),
             }

@@ -81,7 +81,7 @@ impl Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Object(obj) => obj.fmt(f),
-            Self::String(s) => write!(f, "{:?}", s),
+            Self::String(s) => write!(f, "\"{}\"", s.escape_debug()),
             Self::Integer(n) => write!(f, "{}i", *n),
             Self::Float(n) => write!(f, "{}f", f64::from_bits(*n)),
             Self::Bool(b) => write!(f, "{:?}", b),
