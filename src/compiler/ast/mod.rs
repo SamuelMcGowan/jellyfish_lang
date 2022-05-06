@@ -50,7 +50,7 @@ pub enum ExprKind {
 
     Block(Vec<Statement>),
 
-    IfStatement(Box<IfStatement>),
+    If(Box<IfExpr>),
     DebugPrint(Box<Expr>),
 
     DummyExpr,
@@ -85,7 +85,7 @@ macro_rules! expr {
 pub(crate) use expr;
 
 #[derive(Debug, Clone)]
-pub struct IfStatement {
+pub struct IfExpr {
     pub condition: Expr,
     pub then: Expr,
     pub else_: Option<Expr>,

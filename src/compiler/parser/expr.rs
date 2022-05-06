@@ -179,8 +179,46 @@ impl<'sess> Parser<'sess> {
         Ok(expr!(Block(self.parse_block()?)))
     }
 
-    fn parse_if_expr(&mut self, _token: TokenKind) -> JlyResult<Expr> {
-        Ok(expr!(boxed IfStatement(self.parse_if_statement()?)))
+    pub fn parse_if_expr(&mut self, _token: TokenKind) -> JlyResult<Expr> {
+        let condition = self.parse_expr()?;
+
+        let then = self.parse_if_arm()?;
+
+        let else_ = if self.cursor.eat(kwd!(Else)) {
+            Some(if self.cursor.matches(kwd!(If)) {
+                self.parse_expr()?
+            } else {
+                self.parse_if_arm()?
+            })
+        } else {
+            None
+        };
+
+        Ok(expr!(boxed If(IfExpr {
+            condition,
+            then,
+            else_,
+        })))
+    }
+
+    fn parse_if_arm(&mut self) -> JlyResult<Expr> {
+        let token = self.cursor.peek();
+        if token.kind == punct!(LBrace) || token.kind == punct!(LParen) {
+            self.parse_expr()
+        } else {
+            Err(Error::ExpectedIfArm(self.cursor.next()))
+        }
+    }
+
+    fn parse_block(&mut self) -> JlyResult<Vec<Statement>> {
+        let mut statements = vec![];
+
+        while !(self.cursor.eof() || self.cursor.matches(punct!(RBrace))) {
+            statements.push(self.parse_statement());
+        }
+        self.expect(punct!(RBrace))?;
+
+        Ok(statements)
     }
 
     fn parse_print(&mut self, _token: TokenKind) -> JlyResult<Expr> {

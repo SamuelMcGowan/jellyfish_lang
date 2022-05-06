@@ -53,7 +53,7 @@ impl Display for ExprKind {
                 )
             }
 
-            Self::IfStatement(if_statement) => write!(f, "{}", if_statement),
+            Self::If(if_expr) => write!(f, "{}", if_expr),
             Self::DebugPrint(expr) => write!(f, "print({})", expr),
 
             Self::DummyExpr => write!(f, "DummyExpr"),
@@ -67,7 +67,7 @@ impl Display for Statement {
     }
 }
 
-impl Display for IfStatement {
+impl Display for IfExpr {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "(if {} then {}", self.condition, self.then)?;
         if let Some(else_) = &self.else_ {

@@ -1,4 +1,4 @@
-use crate::compiler::ast::{Expr, ExprKind, IfStatement, Module, Statement};
+use crate::compiler::ast::{Expr, ExprKind, IfExpr, Module, Statement};
 use crate::runtime::chunk::{Chunk, Instr};
 use crate::runtime::value::Value;
 
@@ -136,7 +136,7 @@ impl BytecodeEmitter for Expr {
                 }
                 chunk.emit_instr(Instr::LoadUnit);
             }
-            ExprKind::IfStatement(if_statement) => if_statement.emit(chunk),
+            ExprKind::If(if_expr) => if_expr.emit(chunk),
             ExprKind::DebugPrint(expr) => {
                 expr.emit(chunk);
                 chunk.emit_instr(Instr::DebugPrint);
@@ -148,7 +148,7 @@ impl BytecodeEmitter for Expr {
     }
 }
 
-impl BytecodeEmitter for IfStatement {
+impl BytecodeEmitter for IfExpr {
     fn emit(&self, chunk: &mut Chunk) {
         self.condition.emit(chunk);
 
