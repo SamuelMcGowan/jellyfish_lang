@@ -148,92 +148,89 @@ impl<'sess> Parser<'sess> {
         _lhs_token: Token,
         _rhs_token: Token,
     ) -> JlyResult<Expr> {
-        let lhs = Box::new(lhs);
-        let rhs = Box::new(rhs);
-
         // NOTE: must be kept in sync with the infix rules.
         Ok(match op {
             // logic
-            punct!(LogicalOr) => Expr::LogicalOr(lhs, rhs),
-            punct!(LogicalAnd) => Expr::LogicalAnd(lhs, rhs),
+            punct!(LogicalOr) => expr!(boxed LogicalOr(lhs, rhs)),
+            punct!(LogicalAnd) => expr!(boxed LogicalAnd(lhs, rhs)),
 
             // comparisons
-            punct!(EqualEqual) => Expr::Equal(lhs, rhs),
-            punct!(BangEqual) => Expr::NotEqual(lhs, rhs),
-            punct!(LT) => Expr::LT(lhs, rhs),
-            punct!(GT) => Expr::GT(lhs, rhs),
-            punct!(LTEqual) => Expr::LTEqual(lhs, rhs),
-            punct!(GTEqual) => Expr::GTEqual(lhs, rhs),
+            punct!(EqualEqual) => expr!(boxed Equal(lhs, rhs)),
+            punct!(BangEqual) => expr!(boxed NotEqual(lhs, rhs)),
+            punct!(LT) => expr!(boxed LT(lhs, rhs)),
+            punct!(GT) => expr!(boxed GT(lhs, rhs)),
+            punct!(LTEqual) => expr!(boxed LTEqual(lhs, rhs)),
+            punct!(GTEqual) => expr!(boxed GTEqual(lhs, rhs)),
 
             // arithmetic
-            punct!(Add) => Expr::Add(lhs, rhs),
-            punct!(Sub) => Expr::Sub(lhs, rhs),
-            punct!(Mul) => Expr::Mul(lhs, rhs),
-            punct!(Div) => Expr::Div(lhs, rhs),
-            punct!(Mod) => Expr::Mod(lhs, rhs),
-            punct!(Pow) => Expr::Pow(lhs, rhs),
+            punct!(Add) => expr!(boxed Add(lhs, rhs)),
+            punct!(Sub) => expr!(boxed Sub(lhs, rhs)),
+            punct!(Mul) => expr!(boxed Mul(lhs, rhs)),
+            punct!(Div) => expr!(boxed Div(lhs, rhs)),
+            punct!(Mod) => expr!(boxed Mod(lhs, rhs)),
+            punct!(Pow) => expr!(boxed Pow(lhs, rhs)),
 
             _ => unreachable!(),
         })
     }
 
     fn parse_block_expr(&mut self, _token: TokenKind) -> JlyResult<Expr> {
-        Ok(Expr::Block(self.parse_block()?))
+        Ok(expr!(Block(self.parse_block()?)))
     }
 
     fn parse_if_expr(&mut self, _token: TokenKind) -> JlyResult<Expr> {
-        Ok(Expr::IfStatement(Box::new(self.parse_if_statement()?)))
+        Ok(expr!(boxed IfStatement(self.parse_if_statement()?)))
     }
 
     fn parse_var(&mut self, token: TokenKind) -> JlyResult<Expr> {
         match token {
-            TokenKind::Ident(id) => Ok(Expr::Var(id)),
+            TokenKind::Ident(id) => Ok(Expr::new(ExprKind::Var(id))),
             _ => unreachable!(),
         }
     }
 
     fn parse_string(&mut self, token: TokenKind) -> JlyResult<Expr> {
         match token {
-            TokenKind::String(id) => Ok(Expr::Value(Value::String(id))),
+            TokenKind::String(id) => Ok(expr!(Value(Value::String(id)))),
             _ => unreachable!(),
         }
     }
 
     fn parse_integer(&mut self, token: TokenKind) -> JlyResult<Expr> {
         match token {
-            TokenKind::Integer(n) => Ok(Expr::Value(Value::Integer(n))),
+            TokenKind::Integer(n) => Ok(expr!(Value(Value::Integer(n)))),
             _ => unreachable!(),
         }
     }
 
     fn parse_float(&mut self, token: TokenKind) -> JlyResult<Expr> {
         match token {
-            TokenKind::Float(f) => Ok(Expr::Value(Value::Float(f))),
+            TokenKind::Float(f) => Ok(expr!(Value(Value::Float(f)))),
             _ => unreachable!(),
         }
     }
 
     fn parse_bool(&mut self, token: TokenKind) -> JlyResult<Expr> {
         match token {
-            TokenKind::Bool(b) => Ok(Expr::Value(Value::Bool(b))),
+            TokenKind::Bool(b) => Ok(expr!(Value(Value::Bool(b)))),
             _ => unreachable!(),
         }
     }
 
     fn parse_logical_not(&mut self, _token: TokenKind) -> JlyResult<Expr> {
         let expr = self.parse_prec(Prec::LogicalNot as usize)?;
-        Ok(Expr::LogicalNot(Box::new(expr)))
+        Ok(expr!(LogicalNot(Box::new(expr))))
     }
 
     fn parse_negative(&mut self, _token: TokenKind) -> JlyResult<Expr> {
         let expr = self.parse_prec(Prec::Negative as usize + 1)?;
-        Ok(Expr::LogicalNot(Box::new(expr)))
+        Ok(expr!(LogicalNot(Box::new(expr))))
     }
 
     fn parse_grouping(&mut self, _token: TokenKind) -> JlyResult<Expr> {
         let expr = self.parse_or_recover(Self::parse_expr, |s| {
             s.recover_to(punct!(RParen));
-            Expr::DummyExpr
+            expr!(DummyExpr)
         });
         self.expect(punct!(RParen))?;
         Ok(expr)

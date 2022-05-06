@@ -20,7 +20,7 @@ pub enum Statement {
 }
 
 #[derive(Debug, Clone)]
-pub enum Expr {
+pub enum ExprKind {
     Var(Intern<String>),
     Value(Value),
 
@@ -50,6 +50,34 @@ pub enum Expr {
 
     DummyExpr,
 }
+
+#[derive(Debug, Clone)]
+pub struct Expr {
+    pub kind: ExprKind,
+    pub ty: Option<Type>,
+}
+
+impl Expr {
+    pub fn new(kind: ExprKind) -> Self {
+        Expr { kind, ty: None }
+    }
+}
+
+macro_rules! expr {
+    (boxed $kind:ident ($($arg:expr),+)) => {
+        Expr::new(ExprKind::$kind ($(Box::new($arg)),*))
+    };
+
+    ($kind:ident ($($arg:expr),+)) => {
+        Expr::new(ExprKind::$kind ($($arg),*))
+    };
+
+    ($kind:ident) => {
+        Expr::new(ExprKind::$kind)
+    };
+}
+
+pub(crate) use expr;
 
 #[derive(Debug, Clone)]
 pub struct IfStatement {

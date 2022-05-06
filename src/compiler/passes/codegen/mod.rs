@@ -1,4 +1,4 @@
-use crate::compiler::ast::{Expr, IfStatement, Module, Statement};
+use crate::compiler::ast::{Expr, IfStatement, Module, Statement, ExprKind};
 use crate::runtime::chunk::{Chunk, Instr, Opcode};
 use crate::runtime::value::Value;
 
@@ -111,44 +111,44 @@ impl BytecodeEmitter for Expr {
             }};
         }
 
-        match self {
-            Self::Value(value) => {
+        match &self.kind {
+            ExprKind::Value(value) => {
                 chunk.emit_constant(value.clone());
             }
 
-            Self::LogicalOr(a, b) => binary_op!(a OrBool b),
-            Self::LogicalAnd(a, b) => binary_op!(a AndBool b),
-            Self::LogicalNot(a) => {
+            ExprKind::LogicalOr(a, b) => binary_op!(a OrBool b),
+            ExprKind::LogicalAnd(a, b) => binary_op!(a AndBool b),
+            ExprKind::LogicalNot(a) => {
                 a.emit(chunk);
                 chunk.emit_instr(Instr::NotBool);
             }
 
-            Self::Equal(a, b) => binary_op!(a Equal b),
-            Self::NotEqual(a, b) => {
+            ExprKind::Equal(a, b) => binary_op!(a Equal b),
+            ExprKind::NotEqual(a, b) => {
                 binary_op!(a Equal b);
                 chunk.emit_instr(Instr::NotBool);
             }
-            Self::LT(a, b) => binary_op!(a LT b),
-            Self::GT(a, b) => binary_op!(b LT a),
-            Self::LTEqual(a, b) => binary_op!(a LTEqual b),
-            Self::GTEqual(a, b) => binary_op!(b LTEqual a),
+            ExprKind::LT(a, b) => binary_op!(a LT b),
+            ExprKind::GT(a, b) => binary_op!(b LT a),
+            ExprKind::LTEqual(a, b) => binary_op!(a LTEqual b),
+            ExprKind::GTEqual(a, b) => binary_op!(b LTEqual a),
 
-            Self::Add(a, b) => binary_op!(a AddInt b),
-            Self::Sub(a, b) => binary_op!(a SubInt b),
-            Self::Mul(a, b) => binary_op!(a MulInt b),
-            Self::Div(a, b) => binary_op!(a DivInt b),
-            Self::Mod(a, b) => binary_op!(a Mod b),
-            Self::Pow(a, b) => binary_op!(a Pow b),
+            ExprKind::Add(a, b) => binary_op!(a AddInt b),
+            ExprKind::Sub(a, b) => binary_op!(a SubInt b),
+            ExprKind::Mul(a, b) => binary_op!(a MulInt b),
+            ExprKind::Div(a, b) => binary_op!(a DivInt b),
+            ExprKind::Mod(a, b) => binary_op!(a Mod b),
+            ExprKind::Pow(a, b) => binary_op!(a Pow b),
 
-            Self::Block(statements) => {
+            ExprKind::Block(statements) => {
                 for statement in statements {
                     statement.emit(chunk);
                 }
                 // TODO: remember to pop values here
             }
-            Self::IfStatement(if_statement) => if_statement.emit(chunk),
+            ExprKind::IfStatement(if_statement) => if_statement.emit(chunk),
 
-            Self::DummyExpr => unreachable!(),
+            ExprKind::DummyExpr => unreachable!(),
 
             other => todo!("can't emit bytecode for expression {}", other),
         }
