@@ -27,7 +27,7 @@ pub enum Statement {
 #[derive(Debug, Clone)]
 pub struct VarDecl {
     pub ident: Intern<String>,
-    pub value: Option<Box<Expr>>,
+    pub value: Box<Expr>,
 }
 
 #[derive(Debug, Clone)]

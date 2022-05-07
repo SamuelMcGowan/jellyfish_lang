@@ -52,11 +52,9 @@ impl<'sess> Parser<'sess> {
             _ => return Err(Error::ExpectedIdent(token)),
         };
 
-        let value = if self.cursor.eat(punct!(Equal)) {
-            Some(Box::new(self.parse_expr()?))
-        } else {
-            None
-        };
+        self.cursor.eat(punct!(Equal));
+
+        let value = Box::new(self.parse_expr()?);
 
         self.expect(punct!(Semicolon))?;
 

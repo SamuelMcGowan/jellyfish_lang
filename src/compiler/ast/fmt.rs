@@ -54,7 +54,7 @@ impl Display for Statement {
             Self::Expr(expr) => write!(f, "Statement({})", expr),
             Self::Block(block) => block.fmt(f),
             Self::VarDecl(var_decl) => var_decl.fmt(f),
-            Self::If(if_statement) => if_statement.fmt(f)
+            Self::If(if_statement) => if_statement.fmt(f),
         }
     }
 }
@@ -75,10 +75,7 @@ impl Display for Block {
 
 impl Display for VarDecl {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        match &self.value {
-            Some(expr) => write!(f, "(let {} = {})", self.ident, expr),
-            None => write!(f, "(let {})", self.ident),
-        }
+        write!(f, "(let {} = {})", self.ident, self.value)
     }
 }
 
