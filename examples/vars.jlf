@@ -1,1 +1,9 @@
 let a = 15;
+
+{
+    let a = 10;
+    let b = 1;
+    print(a + b);
+}
+
+print(a);

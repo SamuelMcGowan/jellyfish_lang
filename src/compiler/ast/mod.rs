@@ -1,5 +1,6 @@
 use internment::Intern;
 
+use crate::compiler::passes::resolve::VarResolved;
 use crate::runtime::value::Value;
 
 pub use self::types::*;
@@ -14,6 +15,7 @@ pub struct Module {
 #[derive(Debug, Clone)]
 pub struct Block {
     pub statements: Vec<Statement>,
+    pub num_vars: Option<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +42,7 @@ pub struct IfStatement {
 #[derive(Debug, Clone)]
 pub enum ExprKind {
     Var(Intern<String>),
+    VarResolved(VarResolved),
     Value(Value),
 
     // logic

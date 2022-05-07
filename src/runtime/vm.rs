@@ -7,10 +7,7 @@ use super::value::Value;
 #[derive(Debug, Clone)]
 pub enum RuntimeError {
     DivisionByZero,
-    TypeError {
-        expected: Type,
-        found: Type,
-    },
+    TypeError { expected: Type, found: Type },
 }
 
 pub struct CallFrame {
@@ -157,13 +154,17 @@ impl VM {
                     let constant = frame.chunk.constants[read_u8!() as usize].clone();
                     push!(constant);
                 }
-
                 Instr::LoadConstantU32 => {
                     let constant = frame.chunk.constants[read_u32!() as usize].clone();
                     push!(constant);
                 }
+
                 Instr::LoadUnit => {
                     push!(Value::Unit)
+                }
+
+                Instr::LoadLocal => {
+                    push!(self.value_stack[read_u8!() as usize].clone())
                 }
 
                 Instr::Pop => drop(pop!()),

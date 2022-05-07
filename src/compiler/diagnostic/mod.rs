@@ -1,4 +1,5 @@
 use ansi_term::{Colour, Style};
+use internment::Intern;
 
 use crate::compiler::lexer::token::{Token, TokenKind};
 
@@ -10,6 +11,9 @@ pub enum Error {
     UnexpectedToken { expected: TokenKind, found: Token },
     ExpectedExpression(Token),
     ExpectedIdent(Token),
+
+    UnresolvedVariable(Intern<String>),
+    TooManyLocals,
 }
 
 impl Error {
@@ -32,6 +36,12 @@ impl Error {
                     format!("expected an identifier but found {:?}", found.kind),
                     found.span,
                 ),
+
+            Self::UnresolvedVariable(ident) => ErrorReport::new("unresolved variable")
+                .with_label(format!("unresolved variable `{}`", ident)),
+
+            Self::TooManyLocals => ErrorReport::new("too many local variables")
+                .with_note("a maximum of 256 variables is allowed per function".to_string()),
         }
     }
 }

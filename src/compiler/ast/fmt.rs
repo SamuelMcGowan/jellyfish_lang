@@ -15,6 +15,7 @@ impl Display for ExprKind {
     fn fmt(&self, f: &mut Formatter) -> Result {
         match self {
             Self::Var(id) => write!(f, "{}", id),
+            Self::VarResolved(var) => write!(f, "{:?}", var),
             Self::Value(id) => write!(f, "{}", id),
 
             // logic

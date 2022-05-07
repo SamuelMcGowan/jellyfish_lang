@@ -16,7 +16,7 @@ impl<'sess> Parser<'sess> {
             self.recover_past(punct!(RBrace));
         }
 
-        Ok(Block { statements })
+        Ok(Block { statements, num_vars: None })
     }
 
     pub fn parse_statement(&mut self) -> Statement {

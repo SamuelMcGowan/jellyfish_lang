@@ -91,7 +91,9 @@ impl BytecodeEmitter for Statement {
                 chunk.emit_instr(Instr::Pop);
             }
             Self::Block(block) => block.emit(chunk),
-            Self::VarDecl(_var_decl) => todo!("emit code for var decls"),
+            Self::VarDecl(var_decl) => {
+                var_decl.value.emit(chunk);
+            }
             Self::If(if_statement) => if_statement.emit(chunk),
         }
     }
@@ -101,6 +103,9 @@ impl BytecodeEmitter for Block {
     fn emit(&self, chunk: &mut Chunk) {
         for statement in &self.statements {
             statement.emit(chunk);
+        }
+        for _ in 0..self.num_vars.unwrap() {
+            chunk.emit_instr(Instr::Pop);
         }
     }
 }
@@ -138,7 +143,12 @@ impl BytecodeEmitter for Expr {
         }
 
         match &self.kind {
-            ExprKind::Var(_ident) => todo!("emit bytecode for variables"),
+            ExprKind::Var(_ident) => unreachable!(),
+            ExprKind::VarResolved(var) => {
+                chunk.emit_instr(Instr::LoadLocal);
+                chunk.emit_u8(var.byte());
+            }
+
             ExprKind::Value(value) => {
                 chunk.emit_constant(value.clone());
             }
