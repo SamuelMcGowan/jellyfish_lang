@@ -1,13 +1,12 @@
+use crate::compiler::passes::codegen::CodeGenerator;
 use crate::compiler::passes::resolve::Resolver;
 use crate::compiler::passes::visit::Visitor;
-use crate::runtime::chunk::Chunk;
 use crate::runtime::CompiledProgram;
 use crate::Source;
 
 use self::diagnostic::ErrorReporter;
 use self::lexer::Lexer;
 use self::parser::Parser;
-use self::passes::codegen::BytecodeEmitter;
 
 pub mod ast;
 pub mod diagnostic;
@@ -33,8 +32,13 @@ impl<'sess> CompiledProgram<'sess> {
             return Err(());
         }
 
-        let mut chunk = Chunk::default();
-        module_root.emit(&mut chunk);
+        let mut code_gen = CodeGenerator::default();
+        if let Err(e) = code_gen.visit_module(&mut module_root) {
+            diagnostics.report(e.report());
+            return Err(());
+        }
+
+        let chunk = code_gen.chunk();
 
         Ok(Self { source, chunk })
     }

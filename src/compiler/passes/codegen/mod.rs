@@ -1,6 +1,9 @@
 use crate::compiler::ast::*;
+use crate::compiler::diagnostic::JlyResult;
 use crate::runtime::chunk::{Chunk, Instr};
 use crate::runtime::value::Value;
+
+use super::visit::Visitor;
 
 enum JumpKind {
     Jump,
@@ -69,101 +72,81 @@ impl Chunk {
     }
 }
 
-pub trait BytecodeEmitter {
-    fn emit(&self, chunk: &mut Chunk);
+#[derive(Default)]
+pub struct CodeGenerator {
+    chunk: Chunk,
 }
 
-impl BytecodeEmitter for Module {
-    fn emit(&self, chunk: &mut Chunk) {
-        for stmt in &self.statements {
-            stmt.emit(chunk);
-        }
-
-        chunk.emit_instr(Instr::Return);
+impl CodeGenerator {
+    pub fn chunk(self) -> Chunk {
+        self.chunk
     }
 }
 
-impl BytecodeEmitter for Statement {
-    fn emit(&self, chunk: &mut Chunk) {
-        match self {
-            Self::Expr(expr) => {
-                expr.emit(chunk);
-                chunk.emit_instr(Instr::Pop);
+impl Visitor for CodeGenerator {
+    fn visit_module(&mut self, module: &mut Module) -> JlyResult<()> {
+        for statement in &mut module.statements {
+            self.visit_statement(statement)?;
+        }
+        self.chunk.emit_instr(Instr::Return);
+        Ok(())
+    }
+
+    fn visit_block(&mut self, block: &mut Block) -> JlyResult<()> {
+        for statement in &mut block.statements {
+            self.visit_statement(statement)?;
+        }
+        for _ in 0..block.num_vars.unwrap() {
+            self.chunk.emit_instr(Instr::Pop);
+        }
+        Ok(())
+    }
+
+    fn visit_statement(&mut self, statement: &mut Statement) -> JlyResult<()> {
+        match statement {
+            Statement::Expr(expr) => {
+                self.visit_expr(expr)?;
+                self.chunk.emit_instr(Instr::Pop);
             }
-            Self::Block(block) => block.emit(chunk),
-            Self::VarDecl(var_decl) => {
-                var_decl.value.emit(chunk);
-            }
-            Self::If(if_statement) => if_statement.emit(chunk),
+            Statement::Block(block) => self.visit_block(block)?,
+            Statement::VarDecl(var_decl) => self.visit_var_decl(var_decl)?,
+            Statement::If(if_statement) => self.visit_if_statement(if_statement)?,
         }
+        Ok(())
     }
-}
 
-impl BytecodeEmitter for Block {
-    fn emit(&self, chunk: &mut Chunk) {
-        for statement in &self.statements {
-            statement.emit(chunk);
-        }
-        for _ in 0..self.num_vars.unwrap() {
-            chunk.emit_instr(Instr::Pop);
-        }
-    }
-}
-
-impl BytecodeEmitter for IfStatement {
-    fn emit(&self, chunk: &mut Chunk) {
-        self.condition.emit(chunk);
-
-        if let Some(else_) = &self.else_ {
-            let else_jump = chunk.new_jump(JumpKind::JumpNot);
-
-            self.then.emit(chunk);
-            let end_jump = chunk.new_jump(JumpKind::Jump);
-
-            chunk.jump_arrive(else_jump);
-            else_.emit(chunk);
-
-            chunk.jump_arrive(end_jump);
-        } else {
-            let end_jump = chunk.new_jump(JumpKind::JumpNot);
-            self.then.emit(chunk);
-            chunk.jump_arrive(end_jump);
-        }
-    }
-}
-
-impl BytecodeEmitter for Expr {
-    fn emit(&self, chunk: &mut Chunk) {
+    fn visit_expr(&mut self, expr: &mut Expr) -> JlyResult<()> {
         macro_rules! binary_op {
             ($a:ident $op:ident $b:ident) => {{
-                $a.emit(chunk);
-                $b.emit(chunk);
-                chunk.emit_instr(Instr::$op);
+                self.visit_expr($a)?;
+                self.visit_expr($b)?;
+                self.chunk.emit_instr(Instr::$op);
             }};
         }
 
-        match &self.kind {
+        match &mut expr.kind {
             ExprKind::Var(_ident) => unreachable!(),
+
             ExprKind::VarResolved(var) => {
-                chunk.emit_instr(Instr::LoadLocal);
-                chunk.emit_u8(var.byte());
+                self.chunk.emit_instr(Instr::LoadLocal);
+                self.chunk.emit_u8(var.byte());
             }
 
             ExprKind::Value(value) => {
-                chunk.emit_constant(value.clone());
+                self.chunk.emit_constant(value.clone());
             }
 
             ExprKind::LogicalOr(a, b) => binary_op!(a OrBool b),
             ExprKind::LogicalAnd(a, b) => binary_op!(a AndBool b),
             ExprKind::LogicalNot(a) => {
-                a.emit(chunk);
-                chunk.emit_instr(Instr::NotBool);
+                self.visit_expr(a)?;
+                self.chunk.emit_instr(Instr::NotBool);
             }
 
             ExprKind::Equal(a, b) => binary_op!(a Equal b),
             ExprKind::NotEqual(a, b) => {
                 binary_op!(a Equal b);
-                chunk.emit_instr(Instr::NotBool);
+                self.chunk.emit_instr(Instr::NotBool);
             }
             ExprKind::LT(a, b) => binary_op!(a LT b),
             ExprKind::GT(a, b) => binary_op!(b LT a),
@@ -178,12 +161,40 @@ impl BytecodeEmitter for Expr {
             ExprKind::Pow(a, b) => binary_op!(a PowInt b),
 
             ExprKind::DebugPrint(expr) => {
-                expr.emit(chunk);
-                chunk.emit_instr(Instr::DebugPrint);
-                chunk.emit_instr(Instr::LoadUnit);
+                self.visit_expr(expr)?;
+                self.chunk.emit_instr(Instr::DebugPrint);
+                self.chunk.emit_instr(Instr::LoadUnit);
             }
 
             ExprKind::DummyExpr => unreachable!(),
         }
+
+        Ok(())
+    }
+
+    fn visit_var_decl(&mut self, var_decl: &mut VarDecl) -> JlyResult<()> {
+        self.visit_expr(&mut var_decl.value)
+    }
+
+    fn visit_if_statement(&mut self, if_statement: &mut IfStatement) -> JlyResult<()> {
+        self.visit_expr(&mut if_statement.condition)?;
+
+        if let Some(else_) = &mut if_statement.else_ {
+            let else_jump = self.chunk.new_jump(JumpKind::JumpNot);
+
+            self.visit_block(&mut if_statement.then)?;
+            let end_jump = self.chunk.new_jump(JumpKind::Jump);
+
+            self.chunk.jump_arrive(else_jump);
+            self.visit_statement(else_)?;
+
+            self.chunk.jump_arrive(end_jump);
+        } else {
+            let end_jump = self.chunk.new_jump(JumpKind::JumpNot);
+            self.visit_block(&mut if_statement.then)?;
+            self.chunk.jump_arrive(end_jump);
+        }
+
+        Ok(())
     }
 }
