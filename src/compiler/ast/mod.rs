@@ -33,6 +33,12 @@ pub struct VarDecl {
 }
 
 #[derive(Debug, Clone)]
+pub struct Var {
+    pub ident: Intern<String>,
+    pub resolved: Option<VarResolved>,
+}
+
+#[derive(Debug, Clone)]
 pub struct IfStatement {
     pub condition: Expr,
     pub then: Block,
@@ -41,8 +47,7 @@ pub struct IfStatement {
 
 #[derive(Debug, Clone)]
 pub enum ExprKind {
-    Var(Intern<String>),
-    VarResolved(VarResolved),
+    Var(Var),
     Value(Value),
 
     // logic

@@ -125,11 +125,9 @@ impl Visitor for CodeGenerator {
         }
 
         match &mut expr.kind {
-            ExprKind::Var(_ident) => unreachable!(),
-
-            ExprKind::VarResolved(var) => {
+            ExprKind::Var(var) => {
                 self.chunk.emit_instr(Instr::LoadLocal);
-                self.chunk.emit_u8(var.byte());
+                self.chunk.emit_u8(var.resolved.unwrap().byte());
             }
 
             ExprKind::Value(value) => {

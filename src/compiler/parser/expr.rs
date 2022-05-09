@@ -181,7 +181,10 @@ impl<'sess> Parser<'sess> {
 
     fn parse_var(&mut self, token: TokenKind) -> JlyResult<Expr> {
         match token {
-            TokenKind::Ident(id) => Ok(Expr::new(ExprKind::Var(id))),
+            TokenKind::Ident(ident) => Ok(expr!(Var(Var {
+                ident,
+                resolved: None
+            }))),
             _ => unreachable!(),
         }
     }

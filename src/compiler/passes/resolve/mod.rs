@@ -83,12 +83,7 @@ impl Visitor for Resolver {
 
     fn visit_expr(&mut self, expr: &mut Expr) -> JlyResult<()> {
         match &mut expr.kind {
-            ExprKind::Var(ident) => {
-                let resolved = self.resolve_var(*ident)?;
-                *expr = expr!(VarResolved(resolved));
-            }
-            ExprKind::VarResolved(_) => unreachable!(),
-
+            ExprKind::Var(var) => var.resolved = Some(self.resolve_var(var.ident)?),
             ExprKind::Value(_) | ExprKind::DummyExpr => {}
 
             ExprKind::LogicalOr(lhs, rhs)
