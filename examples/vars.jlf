@@ -1,9 +1,16 @@
-let a = 15;
+let a = "hello";
+let b = " world";
+
+let a = "hello2";
 
 {
-    let a = 10;
-    let b = 1;
-    print(a + b);
+    let a = "hello3";
 }
 
+let c = "hey";
+
+print(c = "hiya");
+
 print(a);
+print(b);
+print(c);

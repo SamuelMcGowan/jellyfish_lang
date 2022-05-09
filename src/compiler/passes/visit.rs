@@ -28,6 +28,8 @@ pub trait Visitor {
 
     fn visit_expr(&mut self, expr: &mut Expr) -> JlyResult<()>;
 
+    fn visit_var(&mut self, var: &mut Var) -> JlyResult<()>;
+
     fn visit_var_decl(&mut self, var_decl: &mut VarDecl) -> JlyResult<()>;
 
     fn visit_if_statement(&mut self, if_statement: &mut IfStatement) -> JlyResult<()>;

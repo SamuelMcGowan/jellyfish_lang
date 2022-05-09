@@ -71,6 +71,9 @@ pub enum ExprKind {
     Mod(Box<Expr>, Box<Expr>),
     Pow(Box<Expr>, Box<Expr>),
 
+    // assignment
+    Assignment(Var, Box<Expr>),
+
     DebugPrint(Box<Expr>),
 
     DummyExpr,

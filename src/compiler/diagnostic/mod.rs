@@ -1,8 +1,8 @@
 use ansi_term::{Colour, Style};
 use internment::Intern;
 
+use crate::compiler::ast::Expr;
 use crate::compiler::lexer::token::{Token, TokenKind};
-
 use crate::source::{Source, Span};
 
 pub type JlyResult<T> = Result<T, Error>;
@@ -11,6 +11,7 @@ pub enum Error {
     UnexpectedToken { expected: TokenKind, found: Token },
     ExpectedExpression(Token),
     ExpectedIdent(Token),
+    InvalidAssignmentTarget(Expr),
 
     UnresolvedVariable(Intern<String>),
     TooManyLocals,
@@ -36,6 +37,9 @@ impl Error {
                     format!("expected an identifier but found {:?}", found.kind),
                     found.span,
                 ),
+
+            Self::InvalidAssignmentTarget(lhs) => ErrorReport::new("invalid assignment target")
+                .with_label("expected a variable, found an expression".to_string()),
 
             Self::UnresolvedVariable(ident) => ErrorReport::new("unresolved variable")
                 .with_label(format!("unresolved variable `{}`", ident)),

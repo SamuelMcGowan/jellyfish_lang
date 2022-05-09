@@ -5,6 +5,8 @@ use super::*;
 /// Precedence of an infix operator.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum Prec {
+    Assignment,
+
     LogicalOr,
     LogicalAnd,
     LogicalNot,
@@ -89,6 +91,9 @@ impl<'sess> InfixRule<'sess> {
             punct!(Mul) | punct!(Div) | punct!(Mod) => rule!(Basic, Factor),
             punct!(Pow) => rule!(Basic, Exponent, Right),
 
+            // assignment
+            punct!(Equal) => rule!(Func(Parser::parse_assignment), Assignment),
+
             _ => return None,
         })
     }
@@ -171,6 +176,21 @@ impl<'sess> Parser<'sess> {
 
             _ => unreachable!(),
         })
+    }
+
+    fn parse_assignment(&mut self, lhs: Expr) -> JlyResult<Expr> {
+        // this should be true, but just in case the function is called from
+        // somewhere else..
+        self.expect(punct!(Equal))?;
+
+        let rhs = self.parse_prec(Prec::Assignment as usize)?;
+
+        let lhs = match lhs.kind {
+            ExprKind::Var(var) => var,
+            _ => return Err(Error::InvalidAssignmentTarget(lhs)),
+        };
+
+        Ok(expr!(Assignment(lhs, Box::new(rhs))))
     }
 
     fn parse_print(&mut self, _token: TokenKind) -> JlyResult<Expr> {

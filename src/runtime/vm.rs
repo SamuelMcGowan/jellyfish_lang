@@ -166,6 +166,9 @@ impl VM {
                 Instr::LoadLocal => {
                     push!(self.value_stack[read_u8!() as usize].clone())
                 }
+                Instr::StoreLocal => {
+                    self.value_stack[read_u8!() as usize] = peek!().clone();
+                }
 
                 Instr::Pop => drop(pop!()),
 

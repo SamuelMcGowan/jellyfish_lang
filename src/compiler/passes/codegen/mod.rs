@@ -125,10 +125,7 @@ impl Visitor for CodeGenerator {
         }
 
         match &mut expr.kind {
-            ExprKind::Var(var) => {
-                self.chunk.emit_instr(Instr::LoadLocal);
-                self.chunk.emit_u8(var.resolved.unwrap().byte());
-            }
+            ExprKind::Var(var) => self.visit_var(var)?,
 
             ExprKind::Value(value) => {
                 self.chunk.emit_constant(value.clone());
@@ -158,6 +155,12 @@ impl Visitor for CodeGenerator {
             ExprKind::Mod(a, b) => binary_op!(a ModInt b),
             ExprKind::Pow(a, b) => binary_op!(a PowInt b),
 
+            ExprKind::Assignment(lhs, rhs) => {
+                self.visit_expr(rhs)?;
+                self.chunk.emit_instr(Instr::StoreLocal);
+                self.chunk.emit_u8(lhs.resolved.unwrap().byte());
+            }
+
             ExprKind::DebugPrint(expr) => {
                 self.visit_expr(expr)?;
                 self.chunk.emit_instr(Instr::DebugPrint);
@@ -167,6 +170,12 @@ impl Visitor for CodeGenerator {
             ExprKind::DummyExpr => unreachable!(),
         }
 
+        Ok(())
+    }
+
+    fn visit_var(&mut self, var: &mut Var) -> JlyResult<()> {
+        self.chunk.emit_instr(Instr::LoadLocal);
+        self.chunk.emit_u8(var.resolved.unwrap().byte());
         Ok(())
     }
 

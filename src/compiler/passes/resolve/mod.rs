@@ -86,7 +86,7 @@ impl Visitor for Resolver {
 
     fn visit_expr(&mut self, expr: &mut Expr) -> JlyResult<()> {
         match &mut expr.kind {
-            ExprKind::Var(var) => var.resolved = Some(self.resolve_var(var.ident)?),
+            ExprKind::Var(var) => self.visit_var(var)?,
             ExprKind::Value(_) | ExprKind::DummyExpr => {}
 
             ExprKind::LogicalOr(lhs, rhs)
@@ -107,8 +107,18 @@ impl Visitor for Resolver {
                 self.visit_expr(rhs)?;
             }
 
+            ExprKind::Assignment(lhs, rhs) => {
+                self.visit_var(lhs)?;
+                self.visit_expr(rhs)?;
+            }
+
             ExprKind::LogicalNot(expr) | ExprKind::DebugPrint(expr) => self.visit_expr(expr)?,
         }
+        Ok(())
+    }
+
+    fn visit_var(&mut self, var: &mut Var) -> JlyResult<()> {
+        var.resolved = Some(self.resolve_var(var.ident)?);
         Ok(())
     }
 

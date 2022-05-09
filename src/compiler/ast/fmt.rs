@@ -41,6 +41,9 @@ impl Display for ExprKind {
             Self::Mod(a, b) => write!(f, "({} % {})", a, b),
             Self::Pow(a, b) => write!(f, "({} ^ {})", a, b),
 
+            // assignment
+            Self::Assignment(lhs, rhs) => write!(f, "({} = {})", lhs.ident, rhs),
+
             Self::DebugPrint(expr) => write!(f, "print({})", expr),
 
             Self::DummyExpr => write!(f, "DummyExpr"),

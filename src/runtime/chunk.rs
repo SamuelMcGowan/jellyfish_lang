@@ -26,6 +26,7 @@ pub enum Instr {
     LoadConstantU32,
     LoadUnit,
     LoadLocal,
+    StoreLocal,
 
     Pop,
 
