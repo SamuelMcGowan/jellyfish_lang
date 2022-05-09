@@ -36,8 +36,11 @@ impl Resolver {
 
     fn end_scope(&mut self) -> usize {
         let prev_len = self.scopes.pop().unwrap();
+        let scope_size = self.vars.len() - prev_len;
+
         self.vars.truncate(prev_len);
-        prev_len
+
+        scope_size
     }
 
     fn declare_var(&mut self, ident: Intern<String>) -> JlyResult<VarResolved> {
