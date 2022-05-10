@@ -47,21 +47,23 @@ impl<'sess> Parser<'sess> {
     }
 
     fn parse_var_decl(&mut self) -> JlyResult<VarDecl> {
-        self.expect(kwd!(Let))?;
+        let let_token = self.expect(kwd!(Let))?;
 
-        let token = self.cursor.next();
-        let ident = match token.kind {
+        let ident_token = self.cursor.next();
+        let ident = match ident_token.kind {
             TokenKind::Ident(ident) => ident,
-            _ => return Err(Error::ExpectedIdent(token)),
+            _ => return Err(Error::ExpectedIdent(ident_token)),
         };
 
         self.expect(punct!(Equal))?;
 
         let value = Box::new(self.parse_expr()?);
 
-        self.expect(punct!(Semicolon))?;
+        let semicolon_token = self.expect(punct!(Semicolon))?;
 
-        Ok(VarDecl { ident, value })
+        let span = let_token.span.join(semicolon_token.span);
+
+        Ok(VarDecl { ident, value, span })
     }
 
     fn parse_if_statement(&mut self) -> JlyResult<IfStatement> {

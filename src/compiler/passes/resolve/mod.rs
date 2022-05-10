@@ -43,16 +43,16 @@ impl Resolver {
         scope_size
     }
 
-    fn declare_var(&mut self, ident: Intern<String>) -> JlyResult<VarResolved> {
+    fn declare_var(&mut self, var_decl: &VarDecl) -> JlyResult<VarResolved> {
         let n = self.vars.len();
 
         self.vars.push(Binding {
-            ident,
+            ident: var_decl.ident,
             defined: false,
         });
 
         if n > 0xff {
-            return Err(Error::TooManyLocals);
+            return Err(Error::TooManyLocals(var_decl.span));
         }
 
         Ok(VarResolved(n))
@@ -123,7 +123,7 @@ impl Visitor for Resolver {
     }
 
     fn visit_var_decl(&mut self, var_decl: &mut VarDecl) -> JlyResult<()> {
-        let var = self.declare_var(var_decl.ident)?;
+        let var = self.declare_var(var_decl)?;
         self.visit_expr(&mut var_decl.value)?;
         self.define_var(var);
         Ok(())

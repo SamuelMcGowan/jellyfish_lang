@@ -14,7 +14,7 @@ pub enum Error {
     InvalidAssignmentTarget(Expr),
 
     UnresolvedVariable(Intern<String>),
-    TooManyLocals,
+    TooManyLocals(Span),
 }
 
 impl Error {
@@ -47,8 +47,12 @@ impl Error {
             Self::UnresolvedVariable(ident) => ErrorReport::new("unresolved variable")
                 .with_label(format!("unresolved variable `{}`", ident)),
 
-            Self::TooManyLocals => ErrorReport::new("too many local variables")
-                .with_note("a maximum of 256 variables is allowed per function".to_string()),
+            Self::TooManyLocals(span) => ErrorReport::new("too many local variables")
+                .with_labelled_source(
+                    "a maximum of 256 variables is allowed per function".to_string(),
+                    *span,
+                )
+                .with_note("why do you even have that many variables?".to_string()),
         }
     }
 }

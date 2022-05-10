@@ -30,6 +30,7 @@ pub enum Statement {
 pub struct VarDecl {
     pub ident: Intern<String>,
     pub value: Box<Expr>,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone)]
