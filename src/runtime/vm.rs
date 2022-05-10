@@ -6,6 +6,7 @@ use super::value::Value;
 
 #[derive(Debug, Clone)]
 pub enum RuntimeError {
+    IntegerOverflow,
     DivisionByZero,
     TypeError { expected: Type, found: Type },
 }
@@ -78,6 +79,33 @@ impl VM {
             () => {{
                 self.value_stack.pop().unwrap()
             }};
+            ($ty:ident) => {{
+                match self.value_stack.pop().unwrap() {
+                    Value::$ty(n) => Ok(n),
+                    other => Err(RuntimeError::TypeError {
+                        expected: Type::$ty,
+                        found: other.ty(),
+                    }),
+                }
+            }};
+        }
+
+        macro_rules! binary_op {
+            ($op:tt, $ty_in:ident -> $ty_out:ident) => {{
+                let b = pop!($ty_in)?;
+                let a = pop!($ty_in)?;
+                push!(Value::$ty_out(a $op b));
+            }};
+        }
+
+        macro_rules! integer_op {
+            ($op:ident, $err:ident) => {{
+                let b = pop!(Integer)?;
+                let a = pop!(Integer)?;
+
+                let c = a.$op(b).ok_or(RuntimeError::$err)?;
+                push!(Value::Integer(c));
+            }};
         }
 
         macro_rules! push {
@@ -86,71 +114,32 @@ impl VM {
             }};
         }
 
-        macro_rules! integer_op {
-            ($op:tt) => {
-                op!(integer $op -> Integer)
-            };
-        }
-
-        macro_rules! bool_op {
-            ($op:tt) => {
-                op!(bool $op -> Bool)
-            };
-        }
-
-        macro_rules! op {
-            ($in_type:tt $op:tt -> $out_type:tt) => {{
-                let b = pop!().$in_type()?;
-                let a = pop!().$in_type()?;
-                push!(Value::$out_type(a $op b));
-            }};
-            ($a_type:tt $op:tt $b_type:tt -> $out_type:tt) => {{
-                let b = pop!().$b_type()?;
-                let a = pop!().$a_type()?;
-                push!(Value::$out_type(a $op b));
-            }};
-        }
-
-        macro_rules! vm_assert {
-            ($case:expr, $err:ident) => {{
-                if !$case {
-                    return Err(RuntimeError::$err);
-                }
-            }};
-        }
-
         loop {
             let instr = read_instr!();
             match instr {
-                Instr::OrBool => bool_op!(||),
-                Instr::AndBool => bool_op!(&&),
+                Instr::OrBool => binary_op!(||, Bool -> Bool),
+                Instr::AndBool => binary_op!(&&, Bool -> Bool),
                 Instr::NotBool => {
-                    let a = !pop!().bool()?;
-                    push!(Value::Bool(a))
+                    let a = pop!(Bool)?;
+                    push!(Value::Bool(!a))
                 }
 
-                Instr::Equal => op!(integer == -> Bool),
-                Instr::LT => op!(integer < -> Bool),
-                Instr::LTEqual => op!(integer <= -> Bool),
+                Instr::Equal => binary_op!(==, Integer -> Bool),
+                Instr::LT => binary_op!(<, Integer -> Bool),
+                Instr::LTEqual => binary_op!(<=, Integer -> Bool),
 
-                Instr::AddInt => integer_op!(+),
-                Instr::SubInt => integer_op!(-),
-                Instr::MulInt => integer_op!(*),
-                Instr::DivInt => {
-                    vm_assert!(peek!().integer()? != 0, DivisionByZero);
-                    integer_op!(/);
-                }
-                Instr::ModInt => {
-                    vm_assert!(peek!().integer()? != 0, DivisionByZero);
-                    integer_op!(%);
-                }
+                Instr::AddInt => integer_op!(checked_add, IntegerOverflow),
+                Instr::SubInt => integer_op!(checked_sub, IntegerOverflow),
+                Instr::MulInt => integer_op!(checked_mul, IntegerOverflow),
+                Instr::DivInt => integer_op!(checked_div, IntegerOverflow),
+                Instr::ModInt => integer_op!(checked_rem, IntegerOverflow),
                 Instr::PowInt => {
-                    let b = pop!().integer()? as u32;
-                    let a = pop!().integer()?;
+                    let b = pop!(Integer)? as u32;
+                    let a = pop!(Integer)?;
                     push!(Value::Integer(a.pow(b)));
                 }
                 Instr::NegInt => {
-                    let a = pop!().integer()?;
+                    let a = pop!(Integer)?;
                     push!(Value::Integer(-a))
                 }
 
@@ -181,7 +170,7 @@ impl VM {
                 }
                 Instr::JumpNotU32 => {
                     let dest = read_u32!();
-                    if !pop!().bool()? {
+                    if !pop!(Bool)? {
                         frame.ip = dest;
                     }
                 }
