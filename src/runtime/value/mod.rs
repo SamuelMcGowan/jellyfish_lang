@@ -1,8 +1,11 @@
+pub mod repr;
+
+use internment::Intern;
+
 use std::fmt::Debug;
 use std::rc::Rc;
 
 use crate::runtime::vm::RuntimeError;
-use internment::Intern;
 
 use super::chunk::Chunk;
 

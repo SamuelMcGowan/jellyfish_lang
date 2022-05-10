@@ -1,11 +1,17 @@
+print("Fibonacci");
+print("=========");
+
 let a = 1;
 let b = 1;
 let tmp = 0;
 
-while true {
+let i = 0;
+while i < 20 {
     tmp = a;
     a = b;
     b = b + tmp;
 
     print(a);
+
+    i = i + 1;
 }
