@@ -109,6 +109,7 @@ impl<'sess> Lexer<'sess> {
 
             "if" => kwd!(If),
             "else" => kwd!(Else),
+            "while" => kwd!(While),
 
             "let" => kwd!(Let),
 

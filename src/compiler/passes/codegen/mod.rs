@@ -20,7 +20,9 @@ impl JumpKind {
 }
 
 // TODO: handle 64 bit addr case???
-struct Jump(u32);
+struct JumpSource(u32);
+
+struct JumpDest(u32);
 
 impl Chunk {
     pub fn emit_instr(&mut self, instr: Instr) {
@@ -53,22 +55,34 @@ impl Chunk {
         self.emit_u8((n & 0x000000ff) as u8);
     }
 
-    fn new_jump(&mut self, kind: JumpKind) -> Jump {
+    #[inline]
+    fn set_u32(&mut self, idx: usize, n: u32) {
+        self.code[idx].set_byte((n & 0xff000000) as u8);
+        self.code[idx + 1].set_byte((n & 0x00ff0000) as u8);
+        self.code[idx + 2].set_byte((n & 0x0000ff00) as u8);
+        self.code[idx + 3].set_byte((n & 0x000000ff) as u8);
+    }
+
+    fn new_jump_source(&mut self, kind: JumpKind) -> JumpSource {
         self.emit_instr(kind.instr());
 
         let source = self.code.len() as u32;
         self.emit_u32(0);
 
-        Jump(source)
+        JumpSource(source)
     }
 
-    fn jump_arrive(&mut self, source: Jump) {
-        let from = source.0 as usize;
-        let dest = self.code.len();
-        self.code[from].set_byte((dest & 0xff000000) as u8);
-        self.code[from + 1].set_byte((dest & 0x00ff0000) as u8);
-        self.code[from + 2].set_byte((dest & 0x0000ff00) as u8);
-        self.code[from + 3].set_byte((dest & 0x000000ff) as u8);
+    fn new_jump_dest(&mut self) -> JumpDest {
+        JumpDest(self.code.len() as u32)
+    }
+
+    fn jump_arrive(&mut self, source: JumpSource) {
+        self.set_u32(source.0 as usize, self.code.len() as u32);
+    }
+
+    fn jump_depart(&mut self, dest: JumpDest, kind: JumpKind) {
+        self.emit_instr(kind.instr());
+        self.emit_u32(dest.0 as u32);
     }
 }
 
@@ -111,6 +125,7 @@ impl Visitor for CodeGenerator {
             Statement::Block(block) => self.visit_block(block)?,
             Statement::VarDecl(var_decl) => self.visit_var_decl(var_decl)?,
             Statement::If(if_statement) => self.visit_if_statement(if_statement)?,
+            Statement::While(while_loop) => self.visit_while_loop(while_loop)?,
         }
         Ok(())
     }
@@ -187,20 +202,34 @@ impl Visitor for CodeGenerator {
         self.visit_expr(&mut if_statement.condition)?;
 
         if let Some(else_) = &mut if_statement.else_ {
-            let else_jump = self.chunk.new_jump(JumpKind::JumpNot);
+            let else_jump = self.chunk.new_jump_source(JumpKind::JumpNot);
 
             self.visit_block(&mut if_statement.then)?;
-            let end_jump = self.chunk.new_jump(JumpKind::Jump);
+            let end_jump = self.chunk.new_jump_source(JumpKind::Jump);
 
             self.chunk.jump_arrive(else_jump);
             self.visit_statement(else_)?;
 
             self.chunk.jump_arrive(end_jump);
         } else {
-            let end_jump = self.chunk.new_jump(JumpKind::JumpNot);
+            let end_jump = self.chunk.new_jump_source(JumpKind::JumpNot);
             self.visit_block(&mut if_statement.then)?;
             self.chunk.jump_arrive(end_jump);
         }
+
+        Ok(())
+    }
+
+    fn visit_while_loop(&mut self, while_loop: &mut WhileLoop) -> JlyResult<()> {
+        let top_jump = self.chunk.new_jump_dest();
+
+        self.visit_expr(&mut while_loop.condition)?;
+        let end_jump = self.chunk.new_jump_source(JumpKind::JumpNot);
+
+        self.visit_block(&mut while_loop.body)?;
+        self.chunk.jump_depart(top_jump, JumpKind::Jump);
+
+        self.chunk.jump_arrive(end_jump);
 
         Ok(())
     }

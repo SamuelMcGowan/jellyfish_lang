@@ -58,6 +58,7 @@ impl Display for Statement {
             Self::Block(block) => block.fmt(f),
             Self::VarDecl(var_decl) => var_decl.fmt(f),
             Self::If(if_statement) => if_statement.fmt(f),
+            Self::While(while_loop) => while_loop.fmt(f),
         }
     }
 }
@@ -66,7 +67,7 @@ impl Display for Block {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(
             f,
-            "{}",
+            "{{ {} }}",
             self.statements
                 .iter()
                 .map(|stmt| format!("{}", stmt))
@@ -89,6 +90,12 @@ impl Display for IfStatement {
             write!(f, " else {}", else_)?;
         }
         write!(f, ")")
+    }
+}
+
+impl Display for WhileLoop {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+        write!(f, "(while {} {})", self.condition, self.body)
     }
 }
 

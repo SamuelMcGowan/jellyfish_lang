@@ -24,6 +24,7 @@ pub enum Statement {
     Block(Block),
     VarDecl(VarDecl),
     If(IfStatement),
+    While(WhileLoop),
 }
 
 #[derive(Debug, Clone)]
@@ -44,6 +45,12 @@ pub struct IfStatement {
     pub condition: Expr,
     pub then: Block,
     pub else_: Option<Box<Statement>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct WhileLoop {
+    pub condition: Expr,
+    pub body: Block,
 }
 
 #[derive(Debug, Clone)]

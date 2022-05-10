@@ -22,6 +22,7 @@ pub trait Visitor {
             Statement::VarDecl(var_decl) => self.visit_var_decl(var_decl)?,
             Statement::Block(block) => self.visit_block(block)?,
             Statement::If(if_statement) => self.visit_if_statement(if_statement)?,
+            Statement::While(while_loop) => self.visit_while_loop(while_loop)?,
         }
         Ok(())
     }
@@ -33,4 +34,6 @@ pub trait Visitor {
     fn visit_var_decl(&mut self, var_decl: &mut VarDecl) -> JlyResult<()>;
 
     fn visit_if_statement(&mut self, if_statement: &mut IfStatement) -> JlyResult<()>;
+
+    fn visit_while_loop(&mut self, while_loop: &mut WhileLoop) -> JlyResult<()>;
 }

@@ -33,6 +33,7 @@ impl<'sess> Parser<'sess> {
         match self.cursor.peek().kind {
             kwd!(Let) => Ok(Statement::VarDecl(self.parse_var_decl()?)),
             kwd!(If) => Ok(Statement::If(self.parse_if_statement()?)),
+            kwd!(While) => Ok(Statement::While(self.parse_while_loop()?)),
             punct!(LBrace) => {
                 let block = self.parse_block()?;
                 Ok(Statement::Block(block))
@@ -89,5 +90,12 @@ impl<'sess> Parser<'sess> {
             then,
             else_,
         })
+    }
+
+    fn parse_while_loop(&mut self) -> JlyResult<WhileLoop> {
+        self.expect(kwd!(While))?;
+        let condition = self.parse_expr()?;
+        let body = self.parse_block()?;
+        Ok(WhileLoop { condition, body })
     }
 }

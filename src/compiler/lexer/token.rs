@@ -69,6 +69,7 @@ pub enum Keyword {
     DebugPrint,
     If,
     Else,
+    While,
     Let,
 }
 

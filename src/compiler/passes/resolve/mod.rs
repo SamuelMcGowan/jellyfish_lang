@@ -137,4 +137,9 @@ impl Visitor for Resolver {
         }
         Ok(())
     }
+
+    fn visit_while_loop(&mut self, while_loop: &mut WhileLoop) -> JlyResult<()> {
+        self.visit_expr(&mut while_loop.condition)?;
+        self.visit_block(&mut while_loop.body)
+    }
 }
