@@ -82,27 +82,33 @@ pub enum ExprKind {
 #[derive(Debug, Clone)]
 pub struct Expr {
     pub kind: ExprKind,
+    pub span: Span,
     pub ty: Option<Type>,
 }
 
 impl Expr {
-    pub fn new(kind: ExprKind) -> Self {
-        Expr { kind, ty: None }
+    pub fn new(kind: ExprKind, span: Span) -> Self {
+        Expr {
+            kind,
+            span,
+            ty: None,
+        }
     }
 }
 
 macro_rules! expr {
-    (boxed $kind:ident ($($arg:expr),+)) => {
-        Expr::new(ExprKind::$kind ($(Box::new($arg)),*))
+    (boxed $kind:ident ($($arg:expr),+), $span:expr) => {
+        Expr::new(ExprKind::$kind ($(Box::new($arg)),*), $span)
     };
 
-    ($kind:ident ($($arg:expr),+)) => {
-        Expr::new(ExprKind::$kind ($($arg),*))
+    ($kind:ident ($($arg:expr),+), $span:expr) => {
+        Expr::new(ExprKind::$kind ($($arg),*), $span)
     };
 
-    ($kind:ident) => {
-        Expr::new(ExprKind::$kind)
+    ($kind:ident, $span:expr) => {
+        Expr::new(ExprKind::$kind, $span)
     };
 }
 
+use crate::source::Span;
 pub(crate) use expr;

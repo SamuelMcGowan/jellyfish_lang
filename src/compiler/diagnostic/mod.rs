@@ -39,7 +39,10 @@ impl Error {
                 ),
 
             Self::InvalidAssignmentTarget(lhs) => ErrorReport::new("invalid assignment target")
-                .with_label("expected a variable, found an expression".to_string()),
+                .with_labelled_source(
+                    "expected a variable, found an expression".to_string(),
+                    lhs.span,
+                ),
 
             Self::UnresolvedVariable(ident) => ErrorReport::new("unresolved variable")
                 .with_label(format!("unresolved variable `{}`", ident)),

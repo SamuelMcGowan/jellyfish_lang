@@ -3,6 +3,7 @@ use crate::compiler::diagnostic::*;
 use crate::compiler::lexer::cursor::Cursor;
 use crate::compiler::lexer::token::*;
 use crate::compiler::lexer::Lexer;
+use crate::source::Span;
 
 mod expr;
 mod stmt;
@@ -29,16 +30,21 @@ impl<'sess> Parser<'sess> {
         Module { statements }
     }
 
-    fn parse_or_recover<T, F: FnMut(&mut Self) -> JlyResult<T>, R: FnMut(&mut Self) -> T>(
+    fn parse_or_recover<T, F: FnMut(&mut Self) -> JlyResult<T>, R: FnMut(&mut Self, Span) -> T>(
         &mut self,
         mut f: F,
         mut recover: R,
     ) -> T {
+        let start_span = self.cursor.peek().span;
+
         match f(self) {
             Ok(result) => result,
             Err(err) => {
+                let end_span = self.cursor.prev_span();
+                let span = start_span.join(end_span);
+
                 self.diagnostics.report(err.report());
-                recover(self)
+                recover(self, span)
             }
         }
     }

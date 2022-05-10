@@ -26,7 +26,7 @@ enum Assoc {
     Right,
 }
 
-struct PrefixFunction<'sess>(fn(&mut Parser<'sess>, TokenKind) -> JlyResult<Expr>);
+struct PrefixFunction<'sess>(fn(&mut Parser<'sess>, Token) -> JlyResult<Expr>);
 
 impl<'sess> PrefixFunction<'sess> {
     fn from(kind: TokenKind) -> Option<Self> {
@@ -111,7 +111,7 @@ impl<'sess> Parser<'sess> {
             PrefixFunction::from(lhs_token.kind).ok_or(Error::ExpectedExpression(lhs_token))?;
 
         // Parse the prefix, which is either a prefix operator or a value.
-        let mut expr = prefix_fn.0(self, lhs_token.kind)?;
+        let mut expr = prefix_fn.0(self, lhs_token)?;
 
         // While there is an infix operator that is part of the same expression,
         // parse infixed expressions.
@@ -149,30 +149,32 @@ impl<'sess> Parser<'sess> {
         op: TokenKind,
         lhs: Expr,
         rhs: Expr,
-        _lhs_token: Token,
-        _rhs_token: Token,
+        lhs_token: Token,
+        rhs_token: Token,
     ) -> JlyResult<Expr> {
+        let span = lhs_token.span.join(rhs_token.span);
+
         // NOTE: must be kept in sync with the infix rules.
         Ok(match op {
             // logic
-            punct!(LogicalOr) => expr!(boxed LogicalOr(lhs, rhs)),
-            punct!(LogicalAnd) => expr!(boxed LogicalAnd(lhs, rhs)),
+            punct!(LogicalOr) => expr!(boxed LogicalOr(lhs, rhs), span),
+            punct!(LogicalAnd) => expr!(boxed LogicalAnd(lhs, rhs), span),
 
             // comparisons
-            punct!(EqualEqual) => expr!(boxed Equal(lhs, rhs)),
-            punct!(BangEqual) => expr!(boxed NotEqual(lhs, rhs)),
-            punct!(LT) => expr!(boxed LT(lhs, rhs)),
-            punct!(GT) => expr!(boxed GT(lhs, rhs)),
-            punct!(LTEqual) => expr!(boxed LTEqual(lhs, rhs)),
-            punct!(GTEqual) => expr!(boxed GTEqual(lhs, rhs)),
+            punct!(EqualEqual) => expr!(boxed Equal(lhs, rhs), span),
+            punct!(BangEqual) => expr!(boxed NotEqual(lhs, rhs), span),
+            punct!(LT) => expr!(boxed LT(lhs, rhs), span),
+            punct!(GT) => expr!(boxed GT(lhs, rhs), span),
+            punct!(LTEqual) => expr!(boxed LTEqual(lhs, rhs), span),
+            punct!(GTEqual) => expr!(boxed GTEqual(lhs, rhs), span),
 
             // arithmetic
-            punct!(Add) => expr!(boxed Add(lhs, rhs)),
-            punct!(Sub) => expr!(boxed Sub(lhs, rhs)),
-            punct!(Mul) => expr!(boxed Mul(lhs, rhs)),
-            punct!(Div) => expr!(boxed Div(lhs, rhs)),
-            punct!(Mod) => expr!(boxed Mod(lhs, rhs)),
-            punct!(Pow) => expr!(boxed Pow(lhs, rhs)),
+            punct!(Add) => expr!(boxed Add(lhs, rhs), span),
+            punct!(Sub) => expr!(boxed Sub(lhs, rhs), span),
+            punct!(Mul) => expr!(boxed Mul(lhs, rhs), span),
+            punct!(Div) => expr!(boxed Div(lhs, rhs), span),
+            punct!(Mod) => expr!(boxed Mod(lhs, rhs), span),
+            punct!(Pow) => expr!(boxed Pow(lhs, rhs), span),
 
             _ => unreachable!(),
         })
@@ -185,72 +187,82 @@ impl<'sess> Parser<'sess> {
 
         let rhs = self.parse_prec(Prec::Assignment as usize)?;
 
+        let span = lhs.span.join(rhs.span);
+
         let lhs = match lhs.kind {
             ExprKind::Var(var) => var,
             _ => return Err(Error::InvalidAssignmentTarget(lhs)),
         };
 
-        Ok(expr!(Assignment(lhs, Box::new(rhs))))
+        Ok(expr!(Assignment(lhs, Box::new(rhs)), span))
     }
 
-    fn parse_print(&mut self, _token: TokenKind) -> JlyResult<Expr> {
-        let lparen = self.expect(punct!(LParen))?.kind;
+    fn parse_print(&mut self, print_token: Token) -> JlyResult<Expr> {
+        let lparen = self.expect(punct!(LParen))?;
         let expr = self.parse_grouping(lparen)?;
-        Ok(expr!(boxed DebugPrint(expr)))
+
+        let span = print_token.span.join(expr.span);
+
+        Ok(expr!(boxed DebugPrint(expr), span))
     }
 
-    fn parse_var(&mut self, token: TokenKind) -> JlyResult<Expr> {
-        match token {
-            TokenKind::Ident(ident) => Ok(expr!(Var(Var {
-                ident,
-                resolved: None
-            }))),
+    fn parse_var(&mut self, token: Token) -> JlyResult<Expr> {
+        match token.kind {
+            TokenKind::Ident(ident) => Ok(expr!(
+                Var(Var {
+                    ident,
+                    resolved: None
+                }),
+                token.span
+            )),
             _ => unreachable!(),
         }
     }
 
-    fn parse_string(&mut self, token: TokenKind) -> JlyResult<Expr> {
-        match token {
-            TokenKind::String(id) => Ok(expr!(Value(Value::String(id)))),
+    fn parse_string(&mut self, token: Token) -> JlyResult<Expr> {
+        match token.kind {
+            TokenKind::String(id) => Ok(expr!(Value(Value::String(id)), token.span)),
             _ => unreachable!(),
         }
     }
 
-    fn parse_integer(&mut self, token: TokenKind) -> JlyResult<Expr> {
-        match token {
-            TokenKind::Integer(n) => Ok(expr!(Value(Value::Integer(n)))),
+    fn parse_integer(&mut self, token: Token) -> JlyResult<Expr> {
+        match token.kind {
+            TokenKind::Integer(n) => Ok(expr!(Value(Value::Integer(n)), token.span)),
             _ => unreachable!(),
         }
     }
 
-    fn parse_float(&mut self, token: TokenKind) -> JlyResult<Expr> {
-        match token {
-            TokenKind::Float(f) => Ok(expr!(Value(Value::Float(f)))),
+    fn parse_float(&mut self, token: Token) -> JlyResult<Expr> {
+        match token.kind {
+            TokenKind::Float(f) => Ok(expr!(Value(Value::Float(f)), token.span)),
             _ => unreachable!(),
         }
     }
 
-    fn parse_bool(&mut self, token: TokenKind) -> JlyResult<Expr> {
-        match token {
-            TokenKind::Bool(b) => Ok(expr!(Value(Value::Bool(b)))),
+    fn parse_bool(&mut self, token: Token) -> JlyResult<Expr> {
+        match token.kind {
+            TokenKind::Bool(b) => Ok(expr!(Value(Value::Bool(b)), token.span)),
             _ => unreachable!(),
         }
     }
 
-    fn parse_logical_not(&mut self, _token: TokenKind) -> JlyResult<Expr> {
+    fn parse_logical_not(&mut self, token: Token) -> JlyResult<Expr> {
         let expr = self.parse_prec(Prec::LogicalNot as usize)?;
-        Ok(expr!(LogicalNot(Box::new(expr))))
+        let span = token.span.join(expr.span);
+        Ok(expr!(LogicalNot(Box::new(expr)), token.span))
     }
 
-    fn parse_negative(&mut self, _token: TokenKind) -> JlyResult<Expr> {
+    fn parse_negative(&mut self, token: Token) -> JlyResult<Expr> {
         let expr = self.parse_prec(Prec::Negative as usize + 1)?;
-        Ok(expr!(LogicalNot(Box::new(expr))))
+        let span = token.span.join(expr.span);
+        Ok(expr!(LogicalNot(Box::new(expr)), span))
     }
 
-    fn parse_grouping(&mut self, _token: TokenKind) -> JlyResult<Expr> {
-        let expr = self.parse_or_recover(Self::parse_expr, |s| {
+    fn parse_grouping(&mut self, lparen: Token) -> JlyResult<Expr> {
+        let expr = self.parse_or_recover(Self::parse_expr, |s, span| {
             s.recover_to(punct!(RParen));
-            expr!(DummyExpr)
+            expr!(DummyExpr, span)
         });
         self.expect(punct!(RParen))?;
         Ok(expr)

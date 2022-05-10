@@ -3,7 +3,7 @@ use std::str::Chars;
 
 const EOF_CHAR: char = '\0';
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, Eq, PartialEq)]
 pub struct Span {
     pub start: usize,
     pub end: usize,
@@ -41,6 +41,14 @@ impl Span {
     pub fn normalise(mut self) -> Self {
         self.end = usize::max(self.start, self.end);
         self
+    }
+
+    /// Get a `Span` enclosing two other `Span`s.
+    pub fn join(self, other: Span) -> Self {
+        Span {
+            start: usize::min(self.start, other.start),
+            end: usize::max(self.end, other.end),
+        }
     }
 }
 

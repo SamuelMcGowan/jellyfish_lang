@@ -20,9 +20,9 @@ impl<'sess> Parser<'sess> {
     }
 
     pub fn parse_statement(&mut self) -> Statement {
-        self.parse_or_recover(Self::parse_statement_inner, |s| {
+        self.parse_or_recover(Self::parse_statement_inner, |s, span| {
             s.recover_past(punct!(Semicolon));
-            Statement::Expr(expr!(DummyExpr))
+            Statement::Expr(expr!(DummyExpr, span))
         })
     }
 
