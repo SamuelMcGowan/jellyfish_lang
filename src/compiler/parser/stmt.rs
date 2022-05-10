@@ -16,7 +16,10 @@ impl<'sess> Parser<'sess> {
             self.recover_past(punct!(RBrace));
         }
 
-        Ok(Block { statements, num_vars: None })
+        Ok(Block {
+            statements,
+            num_vars: None,
+        })
     }
 
     pub fn parse_statement(&mut self) -> Statement {
@@ -52,7 +55,7 @@ impl<'sess> Parser<'sess> {
             _ => return Err(Error::ExpectedIdent(token)),
         };
 
-        self.cursor.eat(punct!(Equal));
+        self.expect(punct!(Equal))?;
 
         let value = Box::new(self.parse_expr()?);
 
