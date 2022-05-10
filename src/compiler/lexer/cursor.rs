@@ -62,6 +62,6 @@ impl<'sess> Cursor<'sess> {
     }
 
     pub fn prev_span(&self) -> Span {
-        self.prev.map(|token| token.span).unwrap_or(Span::default())
+        self.prev.map(|token| token.span).unwrap_or_default()
     }
 }

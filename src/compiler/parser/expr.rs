@@ -250,7 +250,7 @@ impl<'sess> Parser<'sess> {
     fn parse_logical_not(&mut self, token: Token) -> JlyResult<Expr> {
         let expr = self.parse_prec(Prec::LogicalNot as usize)?;
         let span = token.span.join(expr.span);
-        Ok(expr!(LogicalNot(Box::new(expr)), token.span))
+        Ok(expr!(LogicalNot(Box::new(expr)), span))
     }
 
     fn parse_negative(&mut self, token: Token) -> JlyResult<Expr> {
@@ -259,7 +259,7 @@ impl<'sess> Parser<'sess> {
         Ok(expr!(LogicalNot(Box::new(expr)), span))
     }
 
-    fn parse_grouping(&mut self, lparen: Token) -> JlyResult<Expr> {
+    fn parse_grouping(&mut self, _token: Token) -> JlyResult<Expr> {
         let expr = self.parse_or_recover(Self::parse_expr, |s, span| {
             s.recover_to(punct!(RParen));
             expr!(DummyExpr, span)
