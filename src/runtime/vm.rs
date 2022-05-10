@@ -149,6 +149,10 @@ impl VM {
                     let a = pop!().integer()?;
                     push!(Value::Integer(a.pow(b)));
                 }
+                Instr::NegInt => {
+                    let a = pop!().integer()?;
+                    push!(Value::Integer(-a))
+                }
 
                 Instr::LoadConstantU8 => {
                     let constant = frame.chunk.constants[read_u8!() as usize].clone();

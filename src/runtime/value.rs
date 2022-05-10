@@ -20,7 +20,7 @@ pub enum Type {
 pub enum Value {
     Object(Rc<Object>),
     String(Intern<String>),
-    Integer(u64),
+    Integer(i64),
     Float(u64),
     Bool(bool),
     Unit,
@@ -53,7 +53,7 @@ impl Value {
         }
     }
 
-    pub fn integer(&self) -> Result<u64, RuntimeError> {
+    pub fn integer(&self) -> Result<i64, RuntimeError> {
         match self {
             Self::Integer(n) => Ok(*n),
             other => Err(RuntimeError::TypeError {

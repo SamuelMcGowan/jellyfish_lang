@@ -21,6 +21,7 @@ pub enum Instr {
     DivInt,
     ModInt,
     PowInt,
+    NegInt,
 
     LoadConstantU8,
     LoadConstantU32,

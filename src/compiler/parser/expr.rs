@@ -228,7 +228,7 @@ impl<'sess> Parser<'sess> {
 
     fn parse_integer(&mut self, token: Token) -> JlyResult<Expr> {
         match token.kind {
-            TokenKind::Integer(n) => Ok(expr!(Value(Value::Integer(n)), token.span)),
+            TokenKind::Integer(n) => Ok(expr!(Value(Value::Integer(n as i64)), token.span)),
             _ => unreachable!(),
         }
     }
@@ -256,7 +256,7 @@ impl<'sess> Parser<'sess> {
     fn parse_negative(&mut self, token: Token) -> JlyResult<Expr> {
         let expr = self.parse_prec(Prec::Negative as usize + 1)?;
         let span = token.span.join(expr.span);
-        Ok(expr!(LogicalNot(Box::new(expr)), span))
+        Ok(expr!(Neg(Box::new(expr)), span))
     }
 
     fn parse_grouping(&mut self, _token: Token) -> JlyResult<Expr> {

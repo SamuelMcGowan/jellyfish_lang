@@ -292,5 +292,12 @@ fn parse_digits(digits: String, radix: u32) -> Option<u64> {
             .checked_mul(radix as u64)
             .and_then(|n| n.checked_add(digit as u64))?;
     }
+
+    // check that the number will fit into an `i64`, which is
+    // how it'll be represented at runtime.
+    if n > i64::MAX as u64 {
+        return None;
+    }
+
     Some(n)
 }

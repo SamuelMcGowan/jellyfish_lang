@@ -40,6 +40,7 @@ impl Display for ExprKind {
             Self::Div(a, b) => write!(f, "({} / {})", a, b),
             Self::Mod(a, b) => write!(f, "({} % {})", a, b),
             Self::Pow(a, b) => write!(f, "({} ^ {})", a, b),
+            Self::Neg(expr) => write!(f, "-{}", expr),
 
             // assignment
             Self::Assignment(lhs, rhs) => write!(f, "({} = {})", lhs.ident, rhs),

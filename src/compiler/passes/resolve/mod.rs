@@ -107,6 +107,8 @@ impl Visitor for Resolver {
                 self.visit_expr(rhs)?;
             }
 
+            ExprKind::Neg(expr) => self.visit_expr(expr)?,
+
             ExprKind::Assignment(lhs, rhs) => {
                 self.visit_var(lhs)?;
                 self.visit_expr(rhs)?;

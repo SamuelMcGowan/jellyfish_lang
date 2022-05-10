@@ -78,6 +78,7 @@ pub enum ExprKind {
     Div(Box<Expr>, Box<Expr>),
     Mod(Box<Expr>, Box<Expr>),
     Pow(Box<Expr>, Box<Expr>),
+    Neg(Box<Expr>),
 
     // assignment
     Assignment(Var, Box<Expr>),

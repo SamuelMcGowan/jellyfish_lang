@@ -169,6 +169,10 @@ impl Visitor for CodeGenerator {
             ExprKind::Div(a, b) => binary_op!(a DivInt b),
             ExprKind::Mod(a, b) => binary_op!(a ModInt b),
             ExprKind::Pow(a, b) => binary_op!(a PowInt b),
+            ExprKind::Neg(expr) => {
+                self.visit_expr(expr)?;
+                self.chunk.emit_instr(Instr::NegInt);
+            }
 
             ExprKind::Assignment(lhs, rhs) => {
                 self.visit_expr(rhs)?;
