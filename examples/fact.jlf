@@ -1,0 +1,14 @@
+let a = 1;
+
+print("Calculating 10! ...");
+
+let i = 10;
+while i > 1 {
+    a = a * i;
+    i = i - 1;
+
+    // intentional error here
+    print(a)
+}
+
+print("Done!");

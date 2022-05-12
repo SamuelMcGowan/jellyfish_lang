@@ -127,7 +127,7 @@ impl ErrorReport {
                 let line_num = format!("{} | ", loc.line);
                 let line = source.span_str(line_span).trim_end();
 
-                let mut underline = span.clamp(line_span).relative_to(line_span.start);
+                let mut underline = span.overlap(line_span).relative_to(line_span.start);
                 if underline.len() == 0 {
                     underline.end += 1;
                 }

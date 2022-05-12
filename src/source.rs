@@ -21,8 +21,8 @@ impl Span {
         self.end - self.start
     }
 
-    /// Bound the `Span` to be within another `Span`
-    pub fn clamp(self, other: Span) -> Self {
+    /// Get the overlap of two spans.
+    pub fn overlap(self, other: Span) -> Self {
         Span {
             start: usize::max(self.start, other.start),
             end: usize::min(self.end, other.end),
@@ -79,6 +79,7 @@ impl Source {
     }
 
     pub fn span_str(&self, span: Span) -> &str {
+        let span = span.overlap(self.file_span());
         &self.source[span.range()]
     }
 
@@ -93,21 +94,13 @@ impl Source {
         let line_index = self.line_index(byte_pos);
 
         let start = self.line_offsets[line_index];
-        let mut end = self
+        let end = self
             .line_offsets
             .get(line_index + 1)
             .copied()
             .unwrap_or(self.source.len());
 
-        // get rid of end of line characters
-        if cfg!(target_os = "windows") {
-            end -= 1;
-        }
-
-        // make sure we don't to deal with any nasty wrapping
-        let end = usize::max(end, start + 1);
-
-        Span { start, end }
+        Span { start, end }.overlap(self.file_span())
     }
 
     pub fn line_col(&self, byte_pos: usize) -> LineCol {
@@ -117,6 +110,13 @@ impl Source {
         LineCol {
             line: line_index + 1,
             col: col_index + 1,
+        }
+    }
+
+    pub fn file_span(&self) -> Span {
+        Span {
+            start: 0,
+            end: self.source.len(),
         }
     }
 
