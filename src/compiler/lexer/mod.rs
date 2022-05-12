@@ -36,7 +36,7 @@ impl<'sess> Lexer<'sess> {
             let kind = match c {
                 ' ' | '\t' | '\r' | '\n' => continue,
 
-                '/' if self.cursor.eat('/') => {
+                '#' => {
                     self.cursor.eat_while(|c| c != '\n');
                     continue;
                 }
