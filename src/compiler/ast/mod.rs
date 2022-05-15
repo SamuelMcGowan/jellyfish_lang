@@ -41,6 +41,14 @@ pub struct Var {
 }
 
 #[derive(Debug, Clone)]
+pub struct FuncDecl {
+    pub ident: Intern<String>,
+    pub params: Vec<Intern<String>>,
+    pub signature_span: Span,
+    pub body: Block,
+}
+
+#[derive(Debug, Clone)]
 pub struct IfStatement {
     pub condition: Expr,
     pub then: Block,

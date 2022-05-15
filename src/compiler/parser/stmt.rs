@@ -1,3 +1,5 @@
+use internment::Intern;
+
 use super::*;
 
 impl<'sess> Parser<'sess> {
@@ -50,21 +52,34 @@ impl<'sess> Parser<'sess> {
     fn parse_var_decl(&mut self) -> JlyResult<VarDecl> {
         let let_token = self.expect(kwd!(Let))?;
 
-        let ident_token = self.cursor.next();
-        let ident = match ident_token.kind {
-            TokenKind::Ident(ident) => ident,
-            _ => return Err(Error::Expected("an identifier", ident_token)),
-        };
-
+        let ident = self.parse_ident()?;
         self.expect(punct!(Equal))?;
 
         let value = Box::new(self.parse_expr()?);
-
         let semicolon_token = self.expect(punct!(Semicolon))?;
 
         let span = let_token.span.join(semicolon_token.span);
 
         Ok(VarDecl { ident, value, span })
+    }
+
+    fn parse_func_decl(&mut self) -> JlyResult<FuncDecl> {
+        let def_token = self.expect(kwd!(Def))?;
+
+        let ident = self.parse_ident()?;
+        let (params, params_span) =
+            self.parse_comma_list(Self::parse_ident, punct!(LParen), punct!(RParen))?;
+
+        let signature_span = def_token.span.join(params_span);
+
+        let body = self.parse_block()?;
+
+        Ok(FuncDecl {
+            ident,
+            params,
+            signature_span,
+            body,
+        })
     }
 
     fn parse_if_statement(&mut self) -> JlyResult<IfStatement> {
@@ -97,5 +112,13 @@ impl<'sess> Parser<'sess> {
         let condition = self.parse_expr()?;
         let body = self.parse_block()?;
         Ok(WhileLoop { condition, body })
+    }
+
+    fn parse_ident(&mut self) -> JlyResult<Intern<String>> {
+        let ident_token = self.cursor.next();
+        match ident_token.kind {
+            TokenKind::Ident(ident) => Ok(ident),
+            _ => Err(Error::Expected("an identifier", ident_token)),
+        }
     }
 }

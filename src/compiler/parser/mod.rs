@@ -63,11 +63,11 @@ impl<'sess> Parser<'sess> {
         f: fn(&mut Self) -> JlyResult<T>,
         start: TokenKind,
         end: TokenKind,
-    ) -> JlyResult<Vec<T>> {
-        self.expect(start)?;
+    ) -> JlyResult<(Vec<T>, Span)> {
+        let start_token = self.expect(start)?;
 
         let mut items = vec![f(self)?];
-        while self.cursor.eat(punct!(Comma)) && !self.cursor.eof() && self.cursor.peek().kind != end
+        while self.cursor.eat(punct!(Comma)) && !self.cursor.eof() && !self.cursor.matches(end)
         {
             let item = f(self)?;
             items.push(item);
@@ -78,7 +78,13 @@ impl<'sess> Parser<'sess> {
             return Err(e);
         }
 
-        Ok(items)
+        let end_token = match self.expect(end) {
+            Ok(token) => token,
+            Err(e) => return Err(e),
+        };
+
+        let span = start_token.span.join(end_token.span);
+        Ok((items, span))
     }
 
     fn expect(&mut self, kind: TokenKind) -> JlyResult<Token> {
