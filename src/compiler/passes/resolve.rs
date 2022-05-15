@@ -1,6 +1,7 @@
 use crate::compiler::ast::*;
 use crate::compiler::diagnostic::{Error, JlyResult};
 use crate::compiler::passes::visit::Visitor;
+use crate::source::Span;
 use internment::Intern;
 
 pub struct Binding {
@@ -43,16 +44,16 @@ impl Resolver {
         scope_size
     }
 
-    fn declare_var(&mut self, var_decl: &VarDecl) -> JlyResult<VarResolved> {
+    fn declare_var(&mut self, ident: Intern<String>, span: Span) -> JlyResult<VarResolved> {
         let n = self.vars.len();
 
         self.vars.push(Binding {
-            ident: var_decl.ident,
+            ident,
             defined: false,
         });
 
         if n > 0xff {
-            return Err(Error::TooManyLocals(var_decl.span));
+            return Err(Error::TooManyLocals(span));
         }
 
         Ok(VarResolved(n))
@@ -125,7 +126,7 @@ impl Visitor for Resolver {
     }
 
     fn visit_var_decl(&mut self, var_decl: &mut VarDecl) -> JlyResult<()> {
-        let var = self.declare_var(var_decl)?;
+        let var = self.declare_var(var_decl.ident, var_decl.span)?;
         self.visit_expr(&mut var_decl.value)?;
         self.define_var(var);
         Ok(())
