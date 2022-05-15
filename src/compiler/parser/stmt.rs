@@ -53,7 +53,7 @@ impl<'sess> Parser<'sess> {
         let ident_token = self.cursor.next();
         let ident = match ident_token.kind {
             TokenKind::Ident(ident) => ident,
-            _ => return Err(Error::ExpectedIdent(ident_token)),
+            _ => return Err(Error::Expected("an identifier", ident_token)),
         };
 
         self.expect(punct!(Equal))?;

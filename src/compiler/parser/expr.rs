@@ -108,7 +108,7 @@ impl<'sess> Parser<'sess> {
         let lhs_token = self.cursor.next();
 
         let prefix_fn =
-            PrefixFunction::from(lhs_token.kind).ok_or(Error::ExpectedExpression(lhs_token))?;
+            PrefixFunction::from(lhs_token.kind).ok_or(Error::Expected("an expression", lhs_token))?;
 
         // Parse the prefix, which is either a prefix operator or a value.
         let mut expr = prefix_fn.0(self, lhs_token)?;

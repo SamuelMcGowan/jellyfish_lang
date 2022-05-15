@@ -9,8 +9,7 @@ pub type JlyResult<T> = Result<T, Error>;
 
 pub enum Error {
     UnexpectedToken { expected: TokenKind, found: Token },
-    ExpectedExpression(Token),
-    ExpectedIdent(Token),
+    Expected(&'static str, Token),
     InvalidAssignmentTarget(Expr),
 
     UnresolvedVariable(Intern<String>),
@@ -26,17 +25,10 @@ impl Error {
                     found.span,
                 ),
 
-            Self::ExpectedExpression(found) => ErrorReport::new("unexpected token")
-                .with_labelled_source(
-                    format!("expected an expression but found {:?}", found.kind),
-                    found.span,
-                ),
-
-            Self::ExpectedIdent(found) => ErrorReport::new("unexpected token")
-                .with_labelled_source(
-                    format!("expected an identifier but found {:?}", found.kind),
-                    found.span,
-                ),
+            Self::Expected(s, found) => ErrorReport::new("unexpected token").with_labelled_source(
+                format!("expected {} but found {:?}", s, found.kind),
+                found.span,
+            ),
 
             Self::InvalidAssignmentTarget(lhs) => ErrorReport::new("invalid assignment target")
                 .with_labelled_source(
