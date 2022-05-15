@@ -1,15 +1,12 @@
+use internment::Intern;
+
 use crate::compiler::ast::*;
 use crate::compiler::diagnostic::{Error, JlyResult};
 use crate::compiler::passes::visit::Visitor;
+use crate::compiler::symbol::{Symbol, SymbolTable};
 use crate::source::Span;
-use internment::Intern;
 
-pub struct Binding {
-    ident: Intern<String>,
-    defined: bool,
-}
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct VarResolved(usize);
 
 impl VarResolved {
@@ -18,55 +15,69 @@ impl VarResolved {
     }
 }
 
+pub struct VarEntry {
+    ident: Intern<String>,
+    defined: bool,
+}
+
 pub struct Resolver {
-    vars: Vec<Binding>,
+    vars: SymbolTable<VarEntry>,
+    stack: Vec<Symbol<VarEntry>>,
     scopes: Vec<usize>,
 }
 
 impl Resolver {
     pub fn new() -> Self {
         Self {
-            vars: vec![],
+            vars: SymbolTable::new(),
+            stack: vec![],
             scopes: vec![],
         }
     }
 
     fn start_scope(&mut self) {
-        self.scopes.push(self.vars.len());
+        self.scopes.push(self.stack.len());
     }
 
     fn end_scope(&mut self) -> usize {
         let prev_len = self.scopes.pop().unwrap();
-        let scope_size = self.vars.len() - prev_len;
+        let scope_size = self.stack.len() - prev_len;
 
-        self.vars.truncate(prev_len);
+        self.stack.truncate(prev_len);
 
         scope_size
     }
 
-    fn declare_var(&mut self, ident: Intern<String>, span: Span) -> JlyResult<VarResolved> {
-        let n = self.vars.len();
+    fn declare_var(
+        &mut self,
+        ident: Intern<String>,
+        ident_span: Span,
+    ) -> JlyResult<Symbol<VarEntry>> {
+        let local_number = self.stack.len();
 
-        self.vars.push(Binding {
+        let entry = VarEntry {
             ident,
             defined: false,
-        });
+        };
+        let symbol = self.vars.add_entry(entry);
 
-        if n > 0xff {
-            return Err(Error::TooManyLocals(span));
+        self.stack.push(symbol);
+
+        if local_number > 0xff {
+            return Err(Error::TooManyLocals(ident_span));
         }
 
-        Ok(VarResolved(n))
+        Ok(symbol)
     }
 
-    fn define_var(&mut self, var: VarResolved) {
-        self.vars[var.0].defined = true;
+    fn define_var(&mut self, symbol: Symbol<VarEntry>) {
+        self.vars.get_mut(symbol).defined = true;
     }
 
     fn resolve_var(&mut self, ident: Intern<String>) -> JlyResult<VarResolved> {
-        self.vars
+        self.stack
             .iter()
-            .rposition(|binding| binding.ident == ident && binding.defined)
+            .rposition(|symbol| self.vars.get(*symbol).ident == ident)
             .map(VarResolved)
             .ok_or(Error::UnresolvedVariable(ident))
     }

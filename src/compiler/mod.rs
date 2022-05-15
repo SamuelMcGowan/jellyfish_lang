@@ -11,6 +11,7 @@ pub mod diagnostic;
 pub mod lexer;
 pub mod parser;
 pub mod passes;
+pub mod symbol;
 
 impl<'sess> CompiledProgram<'sess> {
     #[allow(clippy::result_unit_err)]
