@@ -71,7 +71,6 @@ pub enum Keyword {
     Else,
     While,
     Let,
-    Def,
 }
 
 #[derive(Debug, Clone, Copy)]

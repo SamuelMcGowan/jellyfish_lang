@@ -112,7 +112,6 @@ impl<'sess> Lexer<'sess> {
             "while" => kwd!(While),
 
             "let" => kwd!(Let),
-            "def" => kwd!(Def),
 
             "true" => TokenKind::Bool(true),
             "false" => TokenKind::Bool(false),
