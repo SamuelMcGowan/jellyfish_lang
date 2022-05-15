@@ -61,13 +61,23 @@ impl<'sess> Parser<'sess> {
     fn parse_comma_list<T>(
         &mut self,
         f: fn(&mut Self) -> JlyResult<T>,
-        until: TokenKind,
+        start: TokenKind,
+        end: TokenKind,
     ) -> JlyResult<Vec<T>> {
+        self.expect(start)?;
+
         let mut items = vec![f(self)?];
-        while self.cursor.eat(punct!(Comma)) && self.cursor.peek().kind != until {
+        while self.cursor.eat(punct!(Comma)) && !self.cursor.eof() && self.cursor.peek().kind != end
+        {
             let item = f(self)?;
             items.push(item);
         }
+
+        if let Err(e) = self.expect(end) {
+            self.recover_past(end);
+            return Err(e);
+        }
+
         Ok(items)
     }
 
